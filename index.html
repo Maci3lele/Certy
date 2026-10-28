@@ -4,16 +4,28 @@
 .practice-option{border:1.5px solid #e2e8f2;border-radius:12px;padding:14px 16px;margin:10px 0;background:#fff;transition:background .2s,border-color .2s}
 .practice-option.revealed{background:#ddf7e6;border-color:#28a366;color:#10643a;font-weight:650}
 .practice-option.revealed::before{content:'✓ ';font-weight:900}
+.practice-option{display:flex;align-items:flex-start;gap:12px;cursor:pointer}
+.practice-option input{width:19px;height:19px;flex:none;margin-top:2px;accent-color:#2467bd;cursor:pointer}
+.practice-option.checked:not(.revealed):not(.incorrect){background:#edf4ff;border-color:#5a8fe5}
+.practice-option.incorrect{background:#ffe9ed;border-color:#d8485a;color:#922439;font-weight:650}
+.practice-option.incorrect::after{content:'✗';font-weight:900;margin-left:auto}
+.practice-option.missed{background:#e5f7ea;border-color:#28a366;color:#10643a}
+.practice-option.revealed{background:#ddf7e6;border-color:#28a366;color:#10643a;font-weight:650}
+.practice-option.revealed::before{content:none}
+.practice-option.revealed::after{content:'✓';font-weight:900;margin-left:auto}
+.practice-result{font-weight:700;margin-bottom:6px}
+.practice-result.success{color:#116b41}.practice-result.error{color:#a52b3b}
+.practice-option input:disabled{cursor:default}
 .practice-help{font-size:13px;color:#627182;margin:10px 0}
 </style></head><body><div class="wrap"><header><div><small>Centrum nauki</small><b>InfoMedica / AMMS</b></div><span class="pill">204 pytania</span></header>
-<section id="setup" class="card"><h1>Quiz certyfikacyjny</h1><p>Rozwiązuj pytania z modułów Kadry i Płace, HR Portal i CPP. Możesz zaznaczyć więcej niż jedną odpowiedź. Po zakończeniu zobaczysz wynik i przegląd odpowiedzi.</p><div class="row" style="margin-top:25px"><div class="field"><label class="flabel" for="module">Zakres pytań</label><select id="module"><option value="all">Wszystkie moduły</option><option>Kadry i Płace</option><option>HR Portal</option><option>CPP</option></select></div><div class="field"><label class="flabel" for="count">Liczba pytań</label><select id="count"><option value="10">10 losowych</option><option value="20">20 losowych</option><option value="30" selected>30 losowych</option><option value="50">50 losowych</option><option value="all">Wszystkie z wybranego zakresu</option></select></div></div><div class="row" style="margin-top:17px"><label><input type="checkbox" id="onlyScored"> Tylko pytania z ustalonym kluczem</label></div><div class="toolbar"><button class="primary" id="start">Rozpocznij test</button><button id="practiceStart">Ćwiczenie – pokaż odpowiedzi</button></div><div class="note" style="margin-top:20px">Klucz pochodzi z dostarczonego dokumentu. Odpowiedzi <b style="color:var(--green)">potwierdzone</b> i <b style="color:var(--orange)">prawdopodobne</b> są oceniane osobno; pytania bez ustalonego klucza nie obniżają wyniku.</div></section>
+<section id="setup" class="card"><h1>Quiz certyfikacyjny</h1><p>Rozwiązuj pytania z modułów Kadry i Płace, HR Portal i CPP. Możesz zaznaczyć więcej niż jedną odpowiedź. Po zakończeniu zobaczysz wynik i przegląd odpowiedzi.</p><div class="row" style="margin-top:25px"><div class="field"><label class="flabel" for="module">Zakres pytań</label><select id="module"><option value="all">Wszystkie moduły</option><option>Kadry i Płace</option><option>HR Portal</option><option>CPP</option></select></div><div class="field"><label class="flabel" for="count">Liczba pytań</label><select id="count"><option value="10">10 losowych</option><option value="20">20 losowych</option><option value="30" selected>30 losowych</option><option value="50">50 losowych</option><option value="all">Wszystkie z wybranego zakresu</option></select></div></div><div class="row" style="margin-top:17px"><label><input type="checkbox" id="onlyScored"> Tylko pytania z ustalonym kluczem</label></div><div class="toolbar"><button class="primary" id="start">Rozpocznij test</button><button id="practiceStart">Ćwiczenie – zaznacz i sprawdź</button></div><div class="note" style="margin-top:20px">Klucz pochodzi z dostarczonego dokumentu. Odpowiedzi <b style="color:var(--green)">potwierdzone</b> i <b style="color:var(--orange)">prawdopodobne</b> są oceniane osobno; pytania bez ustalonego klucza nie obniżają wyniku.</div></section>
 <section id="test" class="card hidden"><div class="row" style="justify-content:space-between"><span id="counter" class="meta"></span><span id="topic" class="pill"></span></div><div class="progress"><div id="bar"></div></div><h2 id="question"></h2><div class="meta">Zaznacz wszystkie właściwe odpowiedzi.</div><div id="options" style="margin-top:20px"></div><div class="toolbar"><button id="prev">← Poprzednie</button><button id="next" class="primary">Następne →</button><button id="finish">Zakończ i pokaż wynik</button></div><div class="foot" id="answered"></div><details style="margin-top:16px"><summary class="meta" style="cursor:pointer">Przejdź do numeru pytania</summary><div id="navigation" class="navgrid"></div></details></section>
 <section id="practice" class="card hidden">
 <div class="row" style="justify-content:space-between"><span class="meta" id="practiceCounter"></span><span class="pill" id="practiceTopic"></span></div>
 <h2 id="practiceQuestion" style="margin-top:23px"></h2>
-<p class="practice-help">Przeczytaj warianty i spróbuj samodzielnie wskazać poprawne. Następnie kliknij „Sprawdź poprawne”.</p>
+<p class="practice-help">Zaznacz jedną lub kilka odpowiedzi, a następnie kliknij „Sprawdź odpowiedzi”, aby zobaczyć wynik i poprawne warianty.</p>
 <div id="practiceOptions"></div><div class="note hidden" id="practiceNote"></div>
-<div class="toolbar"><button id="practicePrev">← Poprzednie</button><button class="primary" id="practiceReveal">Sprawdź poprawne</button><button id="practiceNext">Następne →</button></div>
+<div class="toolbar"><button id="practicePrev">← Poprzednie</button><button class="primary" id="practiceReveal">Sprawdź odpowiedzi</button><button id="practiceNext">Następne →</button></div>
 <div class="foot" id="practiceProgress"></div>
 <div class="toolbar"><button id="practiceExit">Wróć do menu</button></div>
 </section>
@@ -28,28 +40,53 @@ function shuffle(a){let b=[...a];for(let i=b.length-1;i>0;i--){let j=Math.floor(
 function show(name){['setup','test','results','practice'].forEach(x=>$(x).classList.toggle('hidden',x!==name))}
 function init(questions){selected=questions;answers={};position=0;show('test');render()}
 $('start').onclick=()=>{let q=QUESTIONS.filter(x=>$('module').value==='all'||x.module===$('module').value);if($('onlyScored').checked)q=q.filter(x=>level(x)!=='unknown');q=shuffle(q);let n=$('count').value;if(n!=='all')q=q.slice(0,Number(n));if(!q.length){alert('Brak pytań dla tych ustawień.');return}init(q)};
-let practiceSelected=[],practicePosition=0,practiceRevealed={};
+let practiceSelected=[],practicePosition=0,practiceRevealed={},practiceAnswers={};
 $('practiceStart').onclick=()=>{
  let q=QUESTIONS.filter(x=>$('module').value==='all'||x.module===$('module').value);
  if($('onlyScored').checked)q=q.filter(x=>level(x)!=='unknown');
  q=shuffle(q);let n=$('count').value;if(n!=='all')q=q.slice(0,Number(n));
  if(!q.length){alert('Brak pytań dla tych ustawień.');return}
- practiceSelected=q;practicePosition=0;practiceRevealed={};show('practice');renderPractice();
+ practiceSelected=q;practicePosition=0;practiceRevealed={};practiceAnswers={};show('practice');renderPractice();
 };
 function renderPractice(){
- let q=practiceSelected[practicePosition],keys=correct(q),revealed=!!practiceRevealed[q.id];
+ let q=practiceSelected[practicePosition], keys=correct(q), revealed=!!practiceRevealed[q.id], picked=practiceAnswers[q.id]||[];
  $('practiceCounter').textContent=`Ćwiczenie ${practicePosition+1} z ${practiceSelected.length}`;
  $('practiceTopic').textContent=q.module;
  $('practiceQuestion').textContent=q.question;
- $('practiceOptions').innerHTML=q.options.map(o=>`<div class="practice-option ${revealed&&keys.includes(o.label)?'revealed':''}"><b>${escapeHTML(o.label)}.</b> ${escapeHTML(o.text)}</div>`).join('');
- $('practiceReveal').textContent=revealed?'Ukryj poprawne':'Sprawdź poprawne';
+ $('practiceOptions').innerHTML='';
+ q.options.forEach(o=>{
+   let expected=keys.includes(o.label), chosen=picked.includes(o.label);
+   let label=document.createElement('label');
+   label.className='practice-option'+(revealed?(expected?' revealed':chosen?' incorrect':''):(chosen?' checked':''));
+   const cb=document.createElement('input');cb.type='checkbox';cb.checked=chosen;cb.disabled=revealed;
+   cb.onchange=()=>{let a=new Set(practiceAnswers[q.id]||[]);if(cb.checked)a.add(o.label);else a.delete(o.label);practiceAnswers[q.id]=[...a];renderPractice()};
+   let content=document.createElement('span');content.innerHTML=`<b>${escapeHTML(o.label)}.</b> ${escapeHTML(o.text)}`;
+   label.append(cb,content);$('practiceOptions').append(label);
+ });
+ $('practiceReveal').textContent=revealed?'Spróbuj ponownie':'Sprawdź odpowiedzi';
  $('practiceNote').classList.toggle('hidden',!revealed);
- if(revealed){$('practiceNote').textContent=keys.length?`Zielonym kolorem oznaczono odpowiedzi wskazane w aktualnym kluczu (${level(q)==='confirmed'?'potwierdzone dokumentacją':'prawdopodobne'}).`:'Brak wskazanej odpowiedzi w aktualnym kluczu – nie można wiarygodnie podświetlić poprawnej.';}
+ if(revealed){
+   if(!keys.length){$('practiceNote').innerHTML='<div class="practice-result">Brak ustalonego klucza</div>Nie można ocenić tej odpowiedzi.';}
+   else {
+     let good=picked.length===keys.length&&picked.every(x=>keys.includes(x));
+     let status=good?'<div class="practice-result success">✓ Poprawnie!</div>':'<div class="practice-result error">✗ Niepoprawnie</div>';
+     let selection=picked.length?picked.map(k=>{let o=q.options.find(x=>x.label===k);return `<div><b>${escapeHTML(k)}:</b> ${escapeHTML(o?.text||'')}</div>`}).join(''):'<div>Nie zaznaczono żadnej odpowiedzi.</div>';
+     let right=q.options.filter(o=>keys.includes(o.label)).map(o=>`<div><b>${escapeHTML(o.label)}:</b> ${escapeHTML(o.text)}</div>`).join('');
+     $('practiceNote').innerHTML=status+`<div><b>Twoje odpowiedzi:</b>${selection}</div><div style="margin-top:8px"><b>Prawidłowe według aktualnego klucza:</b>${right}</div><div style="margin-top:8px;font-weight:400">${level(q)==='confirmed'?'Klucz potwierdzony dokumentacją.':'Klucz prawdopodobny — niepotwierdzony w pełni.'}</div>`;
+   }
+ }
  $('practicePrev').disabled=practicePosition===0;
  $('practiceNext').textContent=practicePosition===practiceSelected.length-1?'Wróć do menu':'Następne →';
- $('practiceProgress').textContent=`Sprawdzone: ${practiceSelected.filter(x=>practiceRevealed[x.id]).length}/${practiceSelected.length}`;
+ let checked=practiceSelected.filter(x=>practiceRevealed[x.id]).length;
+ let right=practiceSelected.filter(x=>practiceRevealed[x.id]&&correct(x).length&&((practiceAnswers[x.id]||[]).length===correct(x).length)&&((practiceAnswers[x.id]||[]).every(k=>correct(x).includes(k)))).length;
+ $('practiceProgress').textContent=`Sprawdzone: ${checked}/${practiceSelected.length} · Poprawne: ${right}/${checked}`;
 }
-$('practiceReveal').onclick=()=>{let q=practiceSelected[practicePosition];practiceRevealed[q.id]=!practiceRevealed[q.id];renderPractice()};
+$('practiceReveal').onclick=()=>{
+ let q=practiceSelected[practicePosition];
+ if(practiceRevealed[q.id]){delete practiceRevealed[q.id];delete practiceAnswers[q.id];}
+ else practiceRevealed[q.id]=true;
+ renderPractice();
+};
 $('practicePrev').onclick=()=>{if(practicePosition>0){practicePosition--;renderPractice()}};
 $('practiceNext').onclick=()=>{if(practicePosition<practiceSelected.length-1){practicePosition++;renderPractice()}else show('setup')};
 $('practiceExit').onclick=()=>show('setup');
