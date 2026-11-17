@@ -1,0 +1,2857 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kadry i Płace (KP z odp)</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --card-bg: #1e293b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --success: #10b981;
+      --danger: #ef4444;
+      --border: #334155;
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    .hidden { display: none !important; }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    .perspective { perspective: 1000px; }
+    .flip-card-inner { transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1); transform-style: preserve-3d; }
+    .flip-card-inner.flipped { transform: rotateY(180deg); }
+    .backface-hidden { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+    .rotate-y-180 { transform: rotateY(180deg); }
+    button, select, input { cursor: pointer; }
+  </style>
+</head>
+<body class="min-h-screen custom-scrollbar flex flex-col bg-slate-950 text-slate-100">
+
+  <!-- TOP HEADER -->
+  <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-50 px-4 py-3">
+    <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <a href="index.html" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition-colors border border-slate-700 shadow-sm" title="Wróć do wyboru testów">
+          &larr; Wszystkie testy
+        </a>
+        <div class="w-9 h-9 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold text-xs shadow-inner">
+          KP
+        </div>
+        <div>
+          <h1 class="text-base sm:text-lg font-bold tracking-tight text-white flex items-center gap-2">
+            Kadry i Płace (KP z odp)
+          </h1>
+          <p class="text-xs text-slate-400">116 pytań z oryginalnego pliku DOCX z kluczem na czerwono</p>
+        </div>
+      </div>
+
+      <!-- STATS COUNTERS -->
+      <div class="flex items-center gap-2 sm:gap-3 text-xs">
+        <div class="bg-slate-800/90 px-3 py-1.5 rounded-lg border border-slate-700 flex items-center gap-2">
+          <span class="text-slate-400">Rozwiązane:</span>
+          <span id="answered-count" class="font-bold text-white">0 / 116</span>
+        </div>
+        <div class="bg-slate-800/90 px-3 py-1.5 rounded-lg border border-slate-700 flex items-center gap-2">
+          <span class="text-slate-400">Skuteczność:</span>
+          <span id="accuracy-rate" class="font-bold text-emerald-400">0%</span>
+        </div>
+        <button id="btn-reset-stats" title="Zresetuj historię odpowiedzi" class="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-colors border border-slate-700">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- NAVIGATION TABS -->
+  <nav class="bg-slate-900 border-b border-slate-800 px-4">
+    <div class="max-w-6xl mx-auto flex items-center gap-1 sm:gap-2 overflow-x-auto py-2">
+      <button onclick="setTab('quiz')" id="tab-quiz" class="tab-btn px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-2 transition-all bg-blue-600 text-white shadow">
+        🎯 Test Egzaminacyjny
+      </button>
+      <button onclick="setTab('flashcards')" id="tab-flashcards" class="tab-btn px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-2 transition-all text-slate-400 hover:text-slate-200">
+        🎴 Fiszki 3D
+      </button>
+      <button onclick="setTab('list')" id="tab-list" class="tab-btn px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-2 transition-all text-slate-400 hover:text-slate-200">
+        📑 Wszystkie pytania z kluczem (116)
+      </button>
+    </div>
+  </nav>
+
+  <!-- MAIN VIEW -->
+  <main class="max-w-6xl w-full mx-auto p-4 sm:p-6 flex-1 flex flex-col gap-6">
+
+    <!-- FILTERS -->
+    <div id="filter-bar" class="bg-slate-900/80 p-3 sm:p-4 rounded-xl border border-slate-800 flex flex-wrap gap-3 items-center justify-between shadow-sm">
+      <div class="flex flex-wrap items-center gap-2 flex-1 min-w-[280px]">
+        <label for="category-select" class="text-xs text-slate-400 font-medium">Kategoria:</label>
+        <select id="category-select" class="bg-slate-950 border border-slate-700 text-slate-200 text-xs rounded-lg px-3 py-2 outline-none focus:border-blue-500">
+<option value="all">Wszystkie moduły (116)</option>
+          <option value="podatki">Podatki i PIT</option>
+          <option value="kadry">Kadry i Akta Osobowe</option>
+          <option value="admin">Konfiguracja i Administracja</option>
+          <option value="grafiki">Czas Pracy i Grafiki</option>
+          <option value="pozyczki">Kasa Pożyczkowa (PKZP)</option>
+          <option value="zus">ZUS, PPK i Ubezpieczenia</option>
+          <option value="place">Płace i Wynagrodzenia</option>
+          <option value="medycyna">AMMS, NFZ i Medycyna</option>
+
+        </select>
+
+        <div class="relative flex-1 min-w-[180px]">
+          <input type="text" id="search-input" placeholder="Szukaj w pytaniach..." class="w-full bg-slate-950 border border-slate-700 text-slate-200 text-xs rounded-lg pl-8 pr-3 py-2 outline-none focus:border-blue-500">
+          <svg class="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer select-none bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
+          <input type="checkbox" id="filter-multi" class="rounded accent-blue-500">
+          <span>Tylko wielokrotny wybór</span>
+        </label>
+        <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer select-none bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
+          <input type="checkbox" id="filter-mistakes" class="rounded accent-blue-500">
+          <span>Tylko moje błędy</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- VIEW 1: QUIZ -->
+    <section id="view-quiz" class="flex-1 flex flex-col items-center justify-center max-w-3xl mx-auto w-full">
+      <div id="quiz-card" class="w-full bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-8 shadow-2xl flex flex-col gap-6 relative overflow-hidden">
+        
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-2">
+            <span id="quiz-category" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+              Kategoria
+            </span>
+            <span id="quiz-multi-badge" class="hidden text-xs font-semibold px-2.5 py-1 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/30 flex items-center gap-1">
+              🔹 Wielokrotny wybór
+            </span>
+          </div>
+          <div class="flex items-center gap-2 text-xs text-slate-400">
+            <span>Pytanie:</span>
+            <span id="quiz-index-indicator" class="font-bold text-white">1 / 116</span>
+          </div>
+        </div>
+
+        <div class="min-h-[70px] flex items-center">
+          <h2 id="quiz-question-text" class="text-base sm:text-lg font-medium text-slate-100 leading-snug">
+            Ładowanie pytania...
+          </h2>
+        </div>
+
+        <!-- OPTIONS CONTAINER -->
+        <div id="quiz-options" class="flex flex-col gap-3"></div>
+
+        <!-- MULTI SUBMIT BUTTON (Only shown for multi-choice when not submitted) -->
+        <div id="multi-submit-container" class="hidden pt-2 flex justify-end">
+          <button id="btn-submit-multi" class="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold shadow-lg shadow-purple-600/30 transition-all flex items-center gap-2">
+            <span>✓ Sprawdź zaznaczone odpowiedzi</span>
+          </button>
+        </div>
+
+        <!-- HINT & FEEDBACK BOX -->
+        <div id="quiz-hint-box" class="hidden p-4 rounded-xl bg-slate-950 border border-slate-800 text-xs sm:text-sm">
+          <div class="flex items-start gap-2.5">
+            <span id="quiz-feedback-icon" class="text-lg leading-none">💡</span>
+            <div class="flex-1">
+              <div id="quiz-feedback-title" class="font-bold text-blue-300 mb-1">Pigułka wiedzy:</div>
+              <p id="quiz-hint-text" class="leading-relaxed text-slate-300"></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- FOOTER NAV BUTTONS -->
+        <div class="flex items-center justify-between pt-3 border-t border-slate-800">
+          <button id="btn-quiz-prev" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 transition-colors flex items-center gap-1.5 cursor-pointer">
+            &larr; Poprzednie
+          </button>
+          <button id="btn-quiz-shuffle" title="Wylosuj losowe pytanie" class="px-3.5 py-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-xs font-medium text-slate-300 transition-colors cursor-pointer flex items-center gap-1">
+            🎲 Losuj
+          </button>
+          <button id="btn-quiz-next" class="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white transition-colors flex items-center gap-1.5 shadow-lg shadow-blue-600/20 cursor-pointer">
+            Następne &rarr;
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 2: FLASHCARDS -->
+    <section id="view-flashcards" class="hidden flex-1 flex flex-col items-center justify-center max-w-2xl mx-auto w-full gap-6">
+      <div class="text-center">
+        <p class="text-xs text-slate-400">Kliknij na kartę, aby ją odwrócić i sprawdzić odpowiedzi oraz uzasadnienie.</p>
+        <div class="text-xs font-semibold text-blue-400 mt-1" id="fc-progress">Karta 1 z 116</div>
+      </div>
+
+      <div id="fc-card" onclick="flipCard()" class="perspective w-full h-[350px] sm:h-[380px] cursor-pointer group">
+        <div id="fc-card-inner" class="flip-card-inner w-full h-full relative rounded-2xl shadow-2xl border border-slate-800 bg-slate-900">
+          
+          <!-- FRONT -->
+          <div class="backface-hidden absolute inset-0 p-6 sm:p-8 flex flex-col justify-between rounded-2xl bg-slate-900 border border-slate-800">
+            <div class="flex items-center justify-between">
+              <span id="fc-cat-badge" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">Kategoria</span>
+              <span class="text-xs text-slate-500 flex items-center gap-1">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path></svg>
+                Kliknij aby sprawdzić
+              </span>
+            </div>
+            
+            <div class="my-auto">
+              <span class="text-xs text-slate-400 block mb-2 font-mono">Pytanie:</span>
+              <h3 id="fc-question-text" class="text-base sm:text-lg font-medium text-white leading-relaxed"></h3>
+            </div>
+
+            <div class="text-center text-xs text-slate-500 border-t border-slate-800 pt-2">
+              Dotknij, aby zobaczyć prawidłowe odpowiedzi z klucza
+            </div>
+          </div>
+
+          <!-- BACK -->
+          <div class="backface-hidden rotate-y-180 absolute inset-0 p-6 sm:p-8 flex flex-col justify-between rounded-2xl bg-slate-950 border border-blue-500/40 overflow-y-auto custom-scrollbar">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full flex items-center gap-1">
+                ✓ Prawidłowe odpowiedzi
+              </span>
+              <span class="text-xs text-slate-400">Kliknij aby odwrócić</span>
+            </div>
+
+            <div class="my-auto space-y-3 py-2">
+              <div id="fc-answer-text" class="text-sm font-semibold text-emerald-300 bg-emerald-950/40 p-3 rounded-xl border border-emerald-800/40 leading-relaxed"></div>
+              <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 text-xs text-slate-300">
+                <strong class="text-blue-300 block mb-1">💡 Uzasadnienie:</strong>
+                <p id="fc-hint-text" class="leading-relaxed"></p>
+              </div>
+            </div>
+
+            <div class="text-center text-xs text-slate-500 border-t border-slate-800 pt-2">
+              Karta odwrócona
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button onclick="prevCard()" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 transition-colors cursor-pointer">
+          &larr; Poprzednia
+        </button>
+        <button onclick="nextCard()" class="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white transition-colors shadow-lg shadow-blue-600/20 cursor-pointer">
+          Następna karta &rarr;
+        </button>
+      </div>
+    </section>
+
+    <!-- VIEW 3: FULL LIST -->
+    <section id="view-list" class="hidden flex-1 flex flex-col gap-4">
+      <div class="flex items-center justify-between">
+        <p class="text-xs text-slate-400">
+          Liczba widocznych pytań: <span id="list-count" class="font-bold text-white">116</span>
+        </p>
+        <div class="flex items-center gap-2">
+          <button onclick="toggleAllAnswers(true)" class="text-xs px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 cursor-pointer">
+            Rozwiń odpowiedzi
+          </button>
+          <button onclick="toggleAllAnswers(false)" class="text-xs px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 cursor-pointer">
+            Zwiń odpowiedzi
+          </button>
+        </div>
+      </div>
+
+      <div id="questions-list-container" class="flex flex-col gap-3"></div>
+    </section>
+
+  </main>
+
+  <script>
+    const rawQuestions = [
+  {
+    "id": 1,
+    "displayId": 1,
+    "q": "Kwota podatku na liście prawa majątkowego",
+    "options": [
+      "Nie jest liczona automatycznie",
+      "Liczona jest na podstawie całości przychodu spadkobiercy",
+      "Liczona jest na podstawie kwoty przychodu opodatkowanego"
+    ],
+    "correct": [
+      2
+    ],
+    "is_multi": false,
+    "cat": "podatki",
+    "catName": "Podatki i PIT",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „Liczona jest na podstawie kwoty przychodu opodatkowanego”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 2,
+    "displayId": 2,
+    "q": "W wykazie kadrowym widok „osoby niezatrudnione dane kadrowe” można wybrać pozycję ‘Kurs BHP rodzaj’ jak rozwiązać problem",
+    "options": [
+      "zgłosić producentowi",
+      "przypisać brakującą pozycję do grupy korzystając z opcji „Pozycje dla pism”",
+      "nie ma takiej sytuacji, w wykazach i pismach są widoczne zawsze takie same pozycje"
+    ],
+    "correct": [
+      1
+    ],
+    "is_multi": false,
+    "cat": "kadry",
+    "catName": "Kadry i Akta Osobowe",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „przypisać brakującą pozycję do grupy korzystając z opcji „Pozycje dla pism””. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 3,
+    "displayId": 3,
+    "q": "System umożliwia utworzenie „Rozliczenia rocznego podatku dochodowego” nie będącego korektą dla danego roku",
+    "options": [
+      "tylko w jednej pozycji obejmującej okres całego roku",
+      "w wielu pozycjach nie przekraczających liczby 12",
+      "tylko w liczbie kwartałów roku"
+    ],
+    "correct": [
+      1
+    ],
+    "is_multi": false,
+    "cat": "podatki",
+    "catName": "Podatki i PIT",
+    "hint": "System umożliwia utworzenie rozliczenia rocznego podatku w wielu pozycjach nieprzekraczających liczby 12 miesięcy."
+  },
+  {
+    "id": 4,
+    "displayId": 4,
+    "q": "Operacja Anonimizacji w systemie KP polega na",
+    "options": [
+      "zmianie wybranych danych",
+      "usuwaniu wybranych danych",
+      "usuwaniu lub modyfikacji danych w systemach powiązanych z KP (FKK, Koszty, Część medyczna)"
+    ],
+    "correct": [
+      1
+    ],
+    "is_multi": false,
+    "cat": "admin",
+    "catName": "Konfiguracja i Administracja",
+    "hint": "Procedura anonimizacji w systemie Kadry i Płace służy realizacji prawa do bycia zapomnianym (RODO) i polega na bezpiecznym usuwaniu wybranych danych osobowych."
+  },
+  {
+    "id": 5,
+    "displayId": 5,
+    "q": "?Zapamiętywanie ustawień formatek konfigurowane w parametrach stacji roboczej dotyczy",
+    "options": [
+      "wszystkich formatek w systemie",
+      "kolejności przeglądania danych oraz warunku selekcji",
+      "konkretnego użytkownika i modułu systemu"
+    ],
+    "correct": [
+      1
+    ],
+    "is_multi": false,
+    "cat": "admin",
+    "catName": "Konfiguracja i Administracja",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „kolejności przeglądania danych oraz warunku selekcji”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 6,
+    "displayId": 6,
+    "q": "W słowniku „Stawek podatkowych” sposób ustalania stopy podatku dla pracownika w trakcie obliczania wynagrodzenia dla miesiąca:",
+    "options": [
+      "może być ustawiony na „bez zmiany progu”",
+      "może mieć wartość „ze zmianą progu”",
+      "nie jest ustawiany"
+    ],
+    "correct": [
+      0,
+      1
+    ],
+    "is_multi": true,
+    "cat": "podatki",
+    "catName": "Podatki i PIT",
+    "hint": "Sposób ustalania stopy podatku w słowniku stawek podatkowych może być ustawiony na **„bez zmiany progu”** lub **„ze zmianą progu”**."
+  },
+  {
+    "id": 7,
+    "displayId": 7,
+    "q": "Zarejestrowanie w systemie urlopu wypoczynkowego można wykonać w module",
+    "options": [
+      "Kadry",
+      "Płace",
+      "Grafiki"
+    ],
+    "correct": [
+      0,
+      2
+    ],
+    "is_multi": true,
+    "cat": "grafiki",
+    "catName": "Czas Pracy i Grafiki",
+    "hint": "Rejestrację urlopu wypoczynkowego w systemie AMMS można wykonać zarówno w module **Kadry** (w ewidencji nieobecności pracownika), jak i bezpośrednio w module **Grafiki** (podczas edycji harmonogramu czasu pracy). Moduł Płace służy wyłącznie do naliczania wypłat."
+  },
+  {
+    "id": 8,
+    "displayId": 8,
+    "q": "Wiek i limit dochodów zwolnionych z podatku w ramach ulgi dla młodych wprowadza się w",
+    "options": [
+      "parametrach kadrowych",
+      "konfiguracja systemu",
+      "słowniku stawek podatkowych"
+    ],
+    "correct": [
+      2
+    ],
+    "is_multi": false,
+    "cat": "podatki",
+    "catName": "Podatki i PIT",
+    "hint": "Zachowanie systemu zależy od parametru `DPODZUML`: jeśli `<> 1` – pojawia się ostrzeżenie podczas generowania listy płac; jeśli `= 1` – system zakłada nową wersję danych podatkowych."
+  },
+  {
+    "id": 9,
+    "displayId": 9,
+    "q": "Kontrola kwoty potrącenia raty pożyczki wykonywana jest na podstawie",
+    "options": [
+      "ustawionych limitów w danych kasy pożyczkowej",
+      "parametrów płacowych w słowniku",
+      "potrąceń skonfigurowanych w składniku płacowym"
+    ],
+    "correct": [
+      0,
+      1
+    ],
+    "is_multi": true,
+    "cat": "pozyczki",
+    "catName": "Kasa Pożyczkowa (PKZP)",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „ustawionych limitów w danych kasy pożyczkowej”, „parametrów płacowych w słowniku”."
+  },
+  {
+    "id": 10,
+    "displayId": 10,
+    "q": "Podpowiadane dla pozycji grafika godzin świątecznych dokonuje się w oparciu o",
+    "options": [
+      "definicję tygodnia pracy z podziałem na dyżury i czas pracy",
+      "definicje obliczania godzin nadliczbowych",
+      "Kalendarz – dni wyróżnione"
+    ],
+    "correct": [
+      0
+    ],
+    "is_multi": false,
+    "cat": "grafiki",
+    "catName": "Czas Pracy i Grafiki",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „definicję tygodnia pracy z podziałem na dyżury i czas pracy”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 11,
+    "displayId": 11,
+    "q": "Liczba godzin związana ze zmianą czasu  z zimowego na letni",
+    "options": [
+      "widoczna jest w pojedynczej pozycji grafika",
+      "wyliczana jest w rozliczeniu dla umowy",
+      "nie jest rejestrowana w systemie"
+    ],
+    "correct": [
+      0
+    ],
+    "is_multi": false,
+    "cat": "grafiki",
+    "catName": "Czas Pracy i Grafiki",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „widoczna jest w pojedynczej pozycji grafika”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 12,
+    "displayId": 12,
+    "q": "?Ustawienie w konfiguracji systemu parametru kadrowego „e-ZLA do weryfikacji” na TAK",
+    "options": [
+      "pozwala ściągnąć do systemu zwolnienia lekarskie w formie dokumentu elektronicznego za pomocą systemu teleinformatycznego",
+      "parametr nie ma wpływu na sposób obsługi w systemie",
+      "wymaga weryfikacji zaimportowanej nieobecności e-ZLA w module kadry"
+    ],
+    "correct": [
+      2
+    ],
+    "is_multi": false,
+    "cat": "zus",
+    "catName": "ZUS, PPK i Ubezpieczenia",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „wymaga weryfikacji zaimportowanej nieobecności e-ZLA w module kadry”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 13,
+    "displayId": 13,
+    "q": "Wprowadzenie na liście płac miesiąca podatkowego większego od bieżącego miesiąca podatkowego o więcej niż 1 miesiąc",
+    "options": [
+      "blokuje zatwierdzenie listy",
+      "ostrzega o powyższej sytuacji i pozwala na wprowadzić taką listę",
+      "automatycznie zwiększa miesiąc podatkowy na większy o 1 od miesiąca płacowego i zatwierdza listę"
+    ],
+    "correct": [
+      1
+    ],
+    "is_multi": false,
+    "cat": "podatki",
+    "catName": "Podatki i PIT",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „ostrzega o powyższej sytuacji i pozwala na wprowadzić taką listę”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 14,
+    "displayId": 14,
+    "q": "W grafiku w kolumnie „Przekr. Okres’” (zawierające ilość godzin nadliczbowych wynikającą z przekroczenia ilości godzin do przepracowania w okresie) wyliczane są gdy:",
+    "options": [
+      "wprowadzono okres rozliczeniowy",
+      "w umowie parametr Nadl. Nieobliczane” ma wartość TAK",
+      "grafik jest o statusie faktycznym"
+    ],
+    "correct": [
+      0,
+      2
+    ],
+    "is_multi": true,
+    "cat": "grafiki",
+    "catName": "Czas Pracy i Grafiki",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „wprowadzono okres rozliczeniowy”, „grafik jest o statusie faktycznym”."
+  },
+  {
+    "id": 15,
+    "displayId": 15,
+    "q": "Z pozycji listy premiowej opcja „Odśwież dane” służy do",
+    "options": [
+      "odświeża na podstawie algorytmu składnika płacowego informacji o liczbie dni nieobecności, które mają mieć wpływ na …",
+      "nie ma takiej opcji",
+      "modyfikacja kwoty premii z miesięcy poprzedzających aktualny miesiąc płacowy"
+    ],
+    "correct": [
+      0
+    ],
+    "is_multi": false,
+    "cat": "kadry",
+    "catName": "Kadry i Akta Osobowe",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „odświeża na podstawie algorytmu składnika płacowego informacji o liczbie dni nieobecności, które mają mieć wpływ na …”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 16,
+    "displayId": 16,
+    "q": "W grupowej operacji wprowadzania wynagrodzenia dodatkowego dodano nowy parametr „przelicz do wymiaru”, który",
+    "options": [
+      "przelicza każde dodatkowe wynagrodzenie proporcjonalnie do wymiaru etatu",
+      "przelicza wynagrodzenie dla wymiaru zatrudnienia większego od 0 i mniejszego od 1",
+      "przelicza wynagrodzenie dodatkowe, które w słowniku ma wybrany sposób obliczania „wartość”"
+    ],
+    "correct": [
+      1,
+      2
+    ],
+    "is_multi": true,
+    "cat": "place",
+    "catName": "Płace i Wynagrodzenia",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „przelicza wynagrodzenie dla wymiaru zatrudnienia większego od 0 i mniejszego od 1”, „przelicza wynagrodzenie dodatkowe, które w słowniku ma wybrany sposób obliczania „wartość””."
+  },
+  {
+    "id": 17,
+    "displayId": 17,
+    "q": "Procedura synchronizacji danych pracownika z częścią medyczną systemu jest uruchamiana jeśli spełnione są następujące warunki",
+    "options": [
+      "w parametrach globalnych systemu jest zdefiniowany dblink do bazy części medycznej systemu",
+      "zmodyfikowana została jedna z następujących danych osobowych pracownika: nazwisko, PESEL, NIP, numer ewidencyjny",
+      "zmodyfikowane zostały dane wykształcenia aktualnego pracownika dotyczące tytułu zawodowego lub naukowego"
+    ],
+    "correct": [
+      0,
+      1
+    ],
+    "is_multi": true,
+    "cat": "medycyna",
+    "catName": "AMMS, NFZ i Medycyna",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „w parametrach globalnych systemu jest zdefiniowany dblink do bazy części medycznej systemu”, „zmodyfikowana została jedna z następujących danych osobowych pracownika: nazwisko, PESEL, NIP, numer ewidencyjny”."
+  },
+  {
+    "id": 18,
+    "displayId": 18,
+    "q": "Grupowa zmiana miejsca zatrudnienia wg słownika wprowadza jednocześnie nowe miejsce zatrudnienia w",
+    "options": [
+      "etatach",
+      "dodatkowym wynagrodzeniu",
+      "podziale kosztów dla etatu"
+    ],
+    "correct": [
+      0,
+      1,
+      2
+    ],
+    "is_multi": true,
+    "cat": "kadry",
+    "catName": "Kadry i Akta Osobowe",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „etatach”, „dodatkowym wynagrodzeniu”, „podziale kosztów dla etatu”."
+  },
+  {
+    "id": 19,
+    "displayId": 19,
+    "q": "Procent kwoty wolnej od potrąceń sprawdzany jest w oparciu o",
+    "options": [
+      "parametr ze słownika parametrów wypłaty wprowadzony w polu wynagrodzenie kwota",
+      "parametr ze słownika parametrów wypłaty wprowadzony w polu zasiłki kwota",
+      "sumy rejestr dochodów"
+    ],
+    "correct": [
+      0,
+      1
+    ],
+    "is_multi": true,
+    "cat": "place",
+    "catName": "Płace i Wynagrodzenia",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „parametr ze słownika parametrów wypłaty wprowadzony w polu wynagrodzenie kwota”, „parametr ze słownika parametrów wypłaty wprowadzony w polu zasiłki kwota”."
+  },
+  {
+    "id": 20,
+    "displayId": 20,
+    "q": "Określenie w składniku płacowym „wypłacony obok niezdolności do pracy niebędący podstawą” oznacza",
+    "options": [
+      "składnik wypłacany jest obok wynagrodzenia/zasiłku za okres niezdolności do pracy",
+      "składnik jest pomniejszany",
+      "nie stanowi podstawy ubezpieczenia emerytalnego/rentowego"
+    ],
+    "correct": [
+      0,
+      2
+    ],
+    "is_multi": true,
+    "cat": "place",
+    "catName": "Płace i Wynagrodzenia",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „składnik wypłacany jest obok wynagrodzenia/zasiłku za okres niezdolności do pracy”, „nie stanowi podstawy ubezpieczenia emerytalnego/rentowego”."
+  },
+  {
+    "id": 21,
+    "displayId": 21,
+    "q": "Do formularza RIA pobierane są dane z list płac wg roku i miesiąca ZUS gdy",
+    "options": [
+      "składniki z listy płac będące podstawą wymiaru na ubezpieczenie emerytalne i rentowe zaliczane są do …",
+      "składniki z listy płac będące podstawą wymiaru składki na ubezpieczenie emerytalne i rentowe zaliczane są do …",
+      "składniki z listy płac wypłacane obok niezdolności do pracy, nie stanowiące podstawy wymiaru składki na ubezpieczenie …"
+    ],
+    "correct": [
+      0,
+      1,
+      2
+    ],
+    "is_multi": true,
+    "cat": "zus",
+    "catName": "ZUS, PPK i Ubezpieczenia",
+    "hint": "Do raportu informacyjnego ZUS RIA pobierane są składniki stanowiące podstawę składek emerytalno-rentowych oraz składniki wypłacane obok niezdolności do pracy."
+  },
+  {
+    "id": 22,
+    "displayId": 22,
+    "q": "Formularz ZWUA służy do",
+    "options": [
+      "wyrejestrowania z ubezpieczenia członków rodziny ubezpieczonego",
+      "zgłoszenia do ubezpieczenia",
+      "wyrejestrowania pracownika z ubezpieczeń społecznych podpowiadane na podstawie wersji danych ubezpieczeniowych pracownika/umowy"
+    ],
+    "correct": [
+      2
+    ],
+    "is_multi": false,
+    "cat": "zus",
+    "catName": "ZUS, PPK i Ubezpieczenia",
+    "hint": "Dokument ZUS ZWUA służy do wyrejestrowania pracownika z ubezpieczeń społecznych na podstawie wersji danych ubezpieczeniowych."
+  },
+  {
+    "id": 23,
+    "displayId": 23,
+    "q": "Wiek emerytalny i datę przejścia na emeryturę zgodnie z przepisami obowiązującymi od 01.10.2017 można uzyskać",
+    "options": [
+      "po uruchomieniu opcji „Emerytura data” dla wskazanych pracowników",
+      "automatycznie podczas wprowadzania nowego pracownika po dniu 01.10.2017",
+      "poprzez ręczne wprowadzenie daty i wieku emerytalnego"
+    ],
+    "correct": [
+      0,
+      1,
+      2
+    ],
+    "is_multi": true,
+    "cat": "kadry",
+    "catName": "Kadry i Akta Osobowe",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „po uruchomieniu opcji „Emerytura data” dla wskazanych pracowników”, „automatycznie podczas wprowadzania nowego pracownika po dniu 01.10.2017”, „poprzez ręczne wprowadzenie daty i wieku emerytalnego”."
+  },
+  {
+    "id": 24,
+    "displayId": 24,
+    "q": "Składki na ubezpieczenie społeczne w systemie KP mogą być naliczane na listach płac typu",
+    "options": [
+      "podstawowa",
+      "umowy zlecenie",
+      "umowy kontrakty"
+    ],
+    "correct": [
+      0,
+      1,
+      2
+    ],
+    "is_multi": true,
+    "cat": "zus",
+    "catName": "ZUS, PPK i Ubezpieczenia",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „podstawowa”, „umowy zlecenie”, „umowy kontrakty”."
+  },
+  {
+    "id": 25,
+    "displayId": 25,
+    "q": "W module Pożyczki opcja „Operacje dla kasy” pozwala na",
+    "options": [
+      "przygotowanie zestawienia wykonanych operacji w ramach pracownika",
+      "rejestrowanie operacji pomiędzy kasą i bankiem",
+      "wyświetlanie operacji dla danych osób i kas do nich przypisanych"
+    ],
+    "correct": [
+      1
+    ],
+    "is_multi": false,
+    "cat": "pozyczki",
+    "catName": "Kasa Pożyczkowa (PKZP)",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „rejestrowanie operacji pomiędzy kasą i bankiem”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 26,
+    "displayId": 26,
+    "q": "Na wydruku rocznym (RMUA) znajduje się „Informacja roczna dla osoby ubezpieczonej” dla danego miesiąca z dwoma identyfikatorami. Jaka jest tego przyczyna?",
+    "options": [
+      "została dla tego miesiąca zastosowana korekta DRA",
+      "pracownik przebywał w tym miesiącu na urlopie wypoczynkowym",
+      "ubezpieczenie jest wprowadzone z poziomu umowy i pracownika"
+    ],
+    "correct": [
+      0,
+      2
+    ],
+    "is_multi": true,
+    "cat": "zus",
+    "catName": "ZUS, PPK i Ubezpieczenia",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „została dla tego miesiąca zastosowana korekta DRA”, „ubezpieczenie jest wprowadzone z poziomu umowy i pracownika”."
+  },
+  {
+    "id": 27,
+    "displayId": 27,
+    "q": "Wydruk zestawienia zbiorczego listy płac typu prawa majątkowe uwzględnia ROR i podatek spadkobierców",
+    "options": [
+      "zawsze",
+      "pod warunkiem ustawienia parametru „Dane dla spadkobierców” w konfiguracji stacji roboczej",
+      "pod warunkiem zaznaczenia w definicji zestawienia zbiorczego parametru „Dane dla spadkobierców”"
+    ],
+    "correct": [
+      1,
+      2
+    ],
+    "is_multi": true,
+    "cat": "podatki",
+    "catName": "Podatki i PIT",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „pod warunkiem ustawienia parametru „Dane dla spadkobierców” w konfiguracji stacji roboczej”, „pod warunkiem zaznaczenia w definicji zestawienia zbiorczego parametru „Dane dla spadkobierców””."
+  },
+  {
+    "id": 28,
+    "displayId": 28,
+    "q": "Wyświetlenie danych pracowników mających wpływ na wyliczenia pozycji sprawozdania GUS Z-12",
+    "options": [
+      "nie jest możliwe w systemie",
+      "uzależnione jest od parametru „Dane do wyliczeń” ustawionego na TAK w nagłówku sprawozdania",
+      "jest przygotowane automatycznie bez udziału operatora systemu"
+    ],
+    "correct": [
+      2
+    ],
+    "is_multi": false,
+    "cat": "kadry",
+    "catName": "Kadry i Akta Osobowe",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „jest przygotowane automatycznie bez udziału operatora systemu”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 29,
+    "displayId": 29,
+    "q": "Operacja generacji pochodnych dla składników jest wykonywana gdy",
+    "options": [
+      "wprowadzono w etacie stawkę do obliczeń (pochodną)",
+      "wprowadzono na liście płac kod stawki do obliczeń",
+      "składniki są typu zajęcia sądowe, składki obowiązkowe, potrącenia, pożyczki – składki, wpisowe, pożyczki – raty, pożyczki – zwroty, pożyczki – pobrania, rozliczenie roczne podatku"
+    ],
+    "correct": [
+      0,
+      1
+    ],
+    "is_multi": true,
+    "cat": "place",
+    "catName": "Płace i Wynagrodzenia",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „wprowadzono w etacie stawkę do obliczeń (pochodną)”, „wprowadzono na liście płac kod stawki do obliczeń”."
+  },
+  {
+    "id": 30,
+    "displayId": 30,
+    "q": "Pobrane e-ZLA o rodzaju „zwolnienie” zostanie wprowadzone do systemu jeśli",
+    "options": [
+      "nie będzie w systemie zarejestrowana nieobecność o tym samym rodzaju i okresie trwania",
+      "będzie zarejestrowana nieobecność o innym kodzie a pokrywającym się okresem trwania i ustawionym parametrze „Wprowadź korekty” na TAK",
+      "jest już wprowadzona dla pracownika nieobecność o podanym kodzie oraz takim samym okresie trwania"
+    ],
+    "correct": [
+      0,
+      1
+    ],
+    "is_multi": true,
+    "cat": "zus",
+    "catName": "ZUS, PPK i Ubezpieczenia",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „nie będzie w systemie zarejestrowana nieobecność o tym samym rodzaju i okresie trwania”, „będzie zarejestrowana nieobecność o innym kodzie a pokrywającym się okresem trwania i ustawionym parametrze „Wprowadź korekty” na TAK”."
+  },
+  {
+    "id": 31,
+    "displayId": 31,
+    "q": "Godziny nadliczbowe za okres w grafiku będą widoczne jeśli",
+    "options": [
+      "w Słowniku „Rozliczenie godzin typy” zostanie zaznaczone „Nadliczbowe za okres”",
+      "zostaną zaimportowane dane z pozycji grafika do rozliczenia",
+      "godziny nadliczbowe zostaną rozliczone na liście płac"
+    ],
+    "correct": [
+      0,
+      1
+    ],
+    "is_multi": true,
+    "cat": "grafiki",
+    "catName": "Czas Pracy i Grafiki",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „w Słowniku „Rozliczenie godzin typy” zostanie zaznaczone „Nadliczbowe za okres””, „zostaną zaimportowane dane z pozycji grafika do rozliczenia”."
+  },
+  {
+    "id": 32,
+    "displayId": 32,
+    "q": "Adres Web Service używany przez system KP do podpisywania danych podpisem elektronicznym można wprowadzić w",
+    "options": [
+      "konfiguracji stacji roboczej umożliwiając podanie innego adresu do stacji terminalowych",
+      "administratorze – opcja Konfiguracja\\WebService",
+      "parametrach płacowych"
+    ],
+    "correct": [
+      0,
+      1
+    ],
+    "is_multi": true,
+    "cat": "admin",
+    "catName": "Konfiguracja i Administracja",
+    "hint": "Adres Web Service dla podpisu elektronicznego można skonfigurować globalnie w **Administratorze (Konfiguracja > WebService)** lub lokalnie w **Konfiguracji stacji roboczej** (co jest kluczowe dla sesji terminalowych / RDP)."
+  },
+  {
+    "id": 33,
+    "displayId": 33,
+    "q": "W systemie KP istnieje możliwość przygotowania i wysyłania plików na adres e-mail z",
+    "options": [
+      "PIT-ami i paskami z wynagrodzeniem",
+      "informacją roczną (RMUA)",
+      "raportami startowymi"
+    ],
+    "correct": [
+      0,
+      2
+    ],
+    "is_multi": true,
+    "cat": "kadry",
+    "catName": "Kadry i Akta Osobowe",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „PIT-ami i paskami z wynagrodzeniem”, „raportami startowymi”."
+  },
+  {
+    "id": 34,
+    "displayId": 34,
+    "q": "Wprowadzenie w ubezpieczeniu kodu pracy w szczególnych warunkach",
+    "options": [
+      "wprowadza automatycznie znacznik opłacania składek na FEP",
+      "generuje komunikat o konieczności zaznaczenia opłacania składek na FEP",
+      "wprowadza automatycznie znacznik opłacania składek na FEP i wartość w polu „Formularz ZSWA do utworzenia”"
+    ],
+    "correct": [
+      1
+    ],
+    "is_multi": false,
+    "cat": "zus",
+    "catName": "ZUS, PPK i Ubezpieczenia",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „generuje komunikat o konieczności zaznaczenia opłacania składek na FEP”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 35,
+    "displayId": 35,
+    "q": "W funkcji „Wprowadź dane na dni” parametr: Pomiń dod. Dni wolne",
+    "options": [
+      "ma wpływ na modyfikację dni świątecznych",
+      "ma wpływ na aktualizowanie pozycji grafika dla których w rodzaju dnia jest wprowadzona wartość ‘B’ (dodatkowy dzień wolny za sobotę), ‘D’ (dodatkowy dzień wolny za niedzielę i święta)",
+      "nie ma takiego parametru"
+    ],
+    "correct": [
+      1
+    ],
+    "is_multi": false,
+    "cat": "kadry",
+    "catName": "Kadry i Akta Osobowe",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „ma wpływ na aktualizowanie pozycji grafika dla których w rodzaju dnia jest wprowadzona wartość ‘B’ (dodatkowy dzień wolny za sobotę), ‘D’ (dodatkowy dzień wolny za niedzielę i święta)”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 36,
+    "displayId": 36,
+    "q": "Czy można wprowadzić w tym samym przedziale czasowym dwie nieobecności",
+    "options": [
+      "system nie pozwala wprowadzić dwóch nieobecności na ten sam dzień",
+      "można wprowadzić pod warunkiem, że jedna nieobecności jest łączona z prać, a druga nie",
+      "można wprowadzić dwie nieobecności, które są łączone z pracą"
+    ],
+    "correct": [
+      1
+    ],
+    "is_multi": false,
+    "cat": "grafiki",
+    "catName": "Czas Pracy i Grafiki",
+    "hint": "Zgodnie z regułami walidacji kolizji terminów w systemie, wprowadzenie dwóch nieobecności w tym samym przedziale czasowym jest dopuszczalne pod warunkiem, że jedna z nich jest łączona z pracą (np. wyjście prywatne lub służbowe), a druga nie."
+  },
+  {
+    "id": 37,
+    "displayId": 37,
+    "q": "Dla podstawy nieobecności istnieje możliwość wyodrębnienia danych wynikających z tzw. Pochodnych",
+    "options": [
+      "PRAWDA",
+      "FAŁSZ"
+    ],
+    "correct": [
+      0
+    ],
+    "is_multi": false,
+    "cat": "grafiki",
+    "catName": "Czas Pracy i Grafiki",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „PRAWDA”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 38,
+    "displayId": 38,
+    "q": "Podpowiadanie godzin nadliczbowych w grafiku jest wykonywane na podstawie",
+    "options": [
+      "definicji wprowadzonej w grupie umów",
+      "opcji wprowadzonej w słowniku rodzajów godzin",
+      "ustawień w „Konfiguracji systemu”"
+    ],
+    "correct": [
+      0,
+      1
+    ],
+    "is_multi": true,
+    "cat": "grafiki",
+    "catName": "Czas Pracy i Grafiki",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „definicji wprowadzonej w grupie umów”, „opcji wprowadzonej w słowniku rodzajów godzin”."
+  },
+  {
+    "id": 39,
+    "displayId": 39,
+    "q": "W podziale kosztów dla etatu według miejsc zatrudnienia wprowadzono znacznik „dostępne dla bloku” wykorzystywany",
+    "options": [
+      "w rozliczeniu grafikowym",
+      "w eksporcie do FKK",
+      "w eksporcie do ZUS"
+    ],
+    "correct": [
+      1
+    ],
+    "is_multi": false,
+    "cat": "kadry",
+    "catName": "Kadry i Akta Osobowe",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „w eksporcie do FKK”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 40,
+    "displayId": 40,
+    "q": "W Ewidencji czasu pracy można wprowadzać i modyfikować nieobecności. Czy istnieje możliwość wyeliminowania konkretnej nieobecności (np. ZZC) i zablokowania jej wprowadzania?",
+    "options": [
+      "nie ma takiej możliwości, można wprowadzać lub nie wszystkie nieobecności w zależności od ustawień w Administratorze",
+      "można w Słowniku typów nieobecności zaznaczyć parametr „Grafik-modyfikacja”",
+      "można w Ewidencji czasu pracy w Konfiguracji systemu zaznaczyć „Modyfikacja nieobecności”"
+    ],
+    "correct": [
+      1
+    ],
+    "is_multi": false,
+    "cat": "grafiki",
+    "catName": "Czas Pracy i Grafiki",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „można w Słowniku typów nieobecności zaznaczyć parametr „Grafik-modyfikacja””. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 41,
+    "displayId": 41,
+    "q": "Kontrole wykonywane dla grupy umów podczas wprowadzania danych do pozycji grafika są realizowane w oparciu o",
+    "options": [
+      "rodzaj etatów",
+      "typy umów (wybranych ze Słownika – Typów umów)",
+      "rodzaj pracownika"
+    ],
+    "correct": [
+      1
+    ],
+    "is_multi": false,
+    "cat": "grafiki",
+    "catName": "Czas Pracy i Grafiki",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „typy umów (wybranych ze Słownika – Typów umów)”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 42,
+    "displayId": 42,
+    "q": "W systemie KP jest możliwość wyliczania danych dotyczących pochodnych dla list płac zamkniętych z okresów wcześniejszych niż aktualny miesiąc płacowy",
+    "options": [
+      "PRAWDA",
+      "FAŁSZ"
+    ],
+    "correct": [
+      0
+    ],
+    "is_multi": false,
+    "cat": "place",
+    "catName": "Płace i Wynagrodzenia",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „PRAWDA”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 43,
+    "displayId": 43,
+    "q": "Zaznaczenie w definicji podstawy nieobecności „zmiana płacy minimalnej – przeliczenie” uruchamia przeliczanie podstawy i jej wybranych (Przeliczenie – stawk",
+    "options": [
+      "składowych z powodu zmiany wartości płacy minimalnej dla nieobecności typu a) średnia chorobowa",
+      "średnia urlopowa",
+      "umowy zlecenia"
+    ],
+    "correct": [
+      0
+    ],
+    "is_multi": false,
+    "cat": "grafiki",
+    "catName": "Czas Pracy i Grafiki",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „składowych z powodu zmiany wartości płacy minimalnej dla nieobecności typu a) średnia chorobowa”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 44,
+    "displayId": 44,
+    "q": "Przekroczenie limitu wieku lub dochodu zwolnionego z tytułu ulgi dla młodych skutkuje",
+    "options": [
+      "pojawieniem się komunikatu w momencie generowania listy płac jeśli zdefiniujemy parametr DPODZUML<>1",
+      "wprowadzeniem nowej wersji danych podatkowych bez ustawionej ulgi dla młodych jeśli zdefiniujemy  parametr DPODZUML=1",
+      "błędną generację danych"
+    ],
+    "correct": [
+      0,
+      1
+    ],
+    "is_multi": true,
+    "cat": "podatki",
+    "catName": "Podatki i PIT",
+    "hint": "Zachowanie systemu zależy od parametru `DPODZUML`: jeśli `<> 1` – pojawia się ostrzeżenie podczas generowania listy płac; jeśli `= 1` – system zakłada nową wersję danych podatkowych."
+  },
+  {
+    "id": 45,
+    "displayId": 45,
+    "q": "Podatek od składek PPK pracodawcy",
+    "options": [
+      "można naliczyć na innej liście plac niż naliczona składka",
+      "nie jest liczony",
+      "można wyliczyć na tej samej liście plac co naliczona składka"
+    ],
+    "correct": [
+      0,
+      2
+    ],
+    "is_multi": true,
+    "cat": "podatki",
+    "catName": "Podatki i PIT",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „można naliczyć na innej liście plac niż naliczona składka”, „można wyliczyć na tej samej liście plac co naliczona składka”."
+  },
+  {
+    "id": 46,
+    "displayId": 46,
+    "q": "Przed zatwierdzeniem formularza DRA system sprawdza czy",
+    "options": [
+      "w RCA są składki PPK pracowników, którym zaznaczono pobieranie PPK/PPE",
+      "zostało wstrzymane pobieranie składek",
+      "są pracownicy, którym ze względu na wiek powinny być potrącone składki PPK/PPE"
+    ],
+    "correct": [
+      0
+    ],
+    "is_multi": false,
+    "cat": "zus",
+    "catName": "ZUS, PPK i Ubezpieczenia",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „w RCA są składki PPK pracowników, którym zaznaczono pobieranie PPK/PPE”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 47,
+    "displayId": 47,
+    "q": "Wysyłanie na mail pasków lub formularzy PIT z systemu KP wymaga zgody pracownika",
+    "options": [
+      "zawsze",
+      "gdy w danych dotyczących parametrów poczty elektronicznej ustawiono wartość parametru POCZTA_ZGODA na TAK",
+      "nie ma funkcjonalności sprawdzającej przed wysłaniem PIT udzielonej zgody"
+    ],
+    "correct": [
+      1
+    ],
+    "is_multi": false,
+    "cat": "podatki",
+    "catName": "Podatki i PIT",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „gdy w danych dotyczących parametrów poczty elektronicznej ustawiono wartość parametru POCZTA_ZGODA na TAK”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 48,
+    "displayId": 48,
+    "q": "W module KP istnieje możliwość generowania na lisach płac składki na PPK gdy",
+    "options": [
+      "zostaną wprowadzone dane PPK",
+      "wprowadzono procent/kwotę składki",
+      "skonfigurowano składniki płacowe"
+    ],
+    "correct": [
+      0,
+      1,
+      2
+    ],
+    "is_multi": true,
+    "cat": "zus",
+    "catName": "ZUS, PPK i Ubezpieczenia",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „zostaną wprowadzone dane PPK”, „wprowadzono procent/kwotę składki”, „skonfigurowano składniki płacowe”."
+  },
+  {
+    "id": 49,
+    "displayId": 49,
+    "q": "Dla wersji rozliczenia rocznego jeśli został utworzony i zapamiętany plik XML w bazie danych to",
+    "options": [
+      "nie ma możliwości utworzenia kolejnego pliku XML",
+      "jest możliwość ponownego utworzenia pliku przy zaznaczonych parametrach „Twórz ponownie” i „Czy nadpisać plik”",
+      "aby utworzyć kolejny wystarczy zaznaczyć, że chcemy nadpisać istniejący"
+    ],
+    "correct": [
+      1
+    ],
+    "is_multi": false,
+    "cat": "kadry",
+    "catName": "Kadry i Akta Osobowe",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „jest możliwość ponownego utworzenia pliku przy zaznaczonych parametrach „Twórz ponownie” i „Czy nadpisać plik””. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 50,
+    "displayId": 50,
+    "q": "Prawo związane z nadawaniem praw dostępu do danych osobowych użytkownikom „Pracownicy: indywidualne prawa dostępu”",
+    "options": [
+      "nie daje dostępu do danych osobowych w przypadku zatrudnienia nowych pracowników",
+      "zastępuje inne prawo nadające dostęp do danych osobowych",
+      "wymaga nadania prawa dostępu do danych pracowników moduł Administrator"
+    ],
+    "correct": [
+      0,
+      2
+    ],
+    "is_multi": true,
+    "cat": "kadry",
+    "catName": "Kadry i Akta Osobowe",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „nie daje dostępu do danych osobowych w przypadku zatrudnienia nowych pracowników”, „wymaga nadania prawa dostępu do danych pracowników moduł Administrator”."
+  },
+  {
+    "id": 51,
+    "displayId": 51,
+    "q": "Wprowadzony w słowniku parametrów płacowych parametr WYNDRASCH o wartość 0,1",
+    "options": [
+      "decyduje o procencie służącym do wyliczania wynagrodzenia płatnika od wypłaconej kwoty świadczeń chorobowych podpowiadanych przez system w DRA",
+      "nie ma takiej parametru",
+      "w DRA nie zostanie wyliczona kwota wynagrodzenia należnego płatnikom"
+    ],
+    "correct": [
+      0
+    ],
+    "is_multi": false,
+    "cat": "zus",
+    "catName": "ZUS, PPK i Ubezpieczenia",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „decyduje o procencie służącym do wyliczania wynagrodzenia płatnika od wypłaconej kwoty świadczeń chorobowych podpowiadanych przez system w DRA”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 52,
+    "displayId": 52,
+    "q": "Usuwanie pozycji podstawy nieobecności typu zmiana stawki dokonuje się poprzez parametr „Wliczane do podstawy od roku i miesiąca” następującą",
+    "options": [
+      "jeśli pola jest puste usuwane są wszystkie pozycje typu ‘zmiana stawki’ z podatku okresu miesięcy",
+      "jeśli podany rok i miesiąc to zostaną usunięte tylko pozycje dotyczące podanego roku i miesiąca od którego mają być zaliczane do podstawy",
+      "jeśli nie ma daty program nie usunie pozycji"
+    ],
+    "correct": [
+      2
+    ],
+    "is_multi": false,
+    "cat": "grafiki",
+    "catName": "Czas Pracy i Grafiki",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „jeśli nie ma daty program nie usunie pozycji”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 53,
+    "displayId": 53,
+    "q": "W definicji wydruku informacji ZUS pole „Kwota wpłaty na PPK fin. Przez płatnika” określa",
+    "options": [
+      "czy ma być umieszczona informacja o kwocie wpłaty na pracowniczy plan kapitałowy finansowy przez ZUS",
+      "czy ma być umieszczona informacja o kwocie wpłaty na pracowniczy plan kapitałowy finansowy przez pracownika",
+      "czy ma być umieszczona informacja o kwocie wpłaty na pracowniczy plan kapitałowy finansowy przez pracodawcę"
+    ],
+    "correct": [
+      2
+    ],
+    "is_multi": false,
+    "cat": "zus",
+    "catName": "ZUS, PPK i Ubezpieczenia",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „czy ma być umieszczona informacja o kwocie wpłaty na pracowniczy plan kapitałowy finansowy przez pracodawcę”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 54,
+    "displayId": 54,
+    "q": "?W Administratorze opcja „Płaca minimalna” służy do",
+    "options": [
+      "definiowania elementów wynagrodzenia zasadniczego w celu porównywania z aktualna płacą minimalną",
+      "wprowadzania kwoty płacy minimalnej",
+      "chronologicznej rejestracji definicji składowych płacy minimalnej"
+    ],
+    "correct": [
+      0,
+      2
+    ],
+    "is_multi": true,
+    "cat": "place",
+    "catName": "Płace i Wynagrodzenia",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „definiowania elementów wynagrodzenia zasadniczego w celu porównywania z aktualna płacą minimalną”, „chronologicznej rejestracji definicji składowych płacy minimalnej”."
+  },
+  {
+    "id": 55,
+    "displayId": 55,
+    "q": "W Płacach opcja „Tworzenie i generacja”",
+    "options": [
+      "automatycznie tworzy listy i generuje dane do umów nie dopisanych do jakiejkolwiek listy płac",
+      "automatycznie generuje wszystkie listy płacowe z danego miesiąca płacowego",
+      "automatycznie tworzy listy podstawowe dla bieżącego miesiąca płacowego i generuje dane do umów o pracę nie dopisanych do jakiejkolwiek listy płac następnie generuje istniejące listy podstawowe"
+    ],
+    "correct": [
+      2
+    ],
+    "is_multi": false,
+    "cat": "place",
+    "catName": "Płace i Wynagrodzenia",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „automatycznie tworzy listy podstawowe dla bieżącego miesiąca płacowego i generuje dane do umów o pracę nie dopisanych do jakiejkolwiek listy płac następnie generuje istniejące listy podstawowe”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 56,
+    "displayId": 56,
+    "q": "Wykonanie operacji generacji pochodnych umowy możliwe jest dla umowy",
+    "options": [
+      "na listach płac zatwierdzonych",
+      "na listach płac z zamkniętych miesięcy",
+      "na listach płac w których wprowadzono Pochodne stawki do obliczeń"
+    ],
+    "correct": [
+      0,
+      1,
+      2
+    ],
+    "is_multi": true,
+    "cat": "place",
+    "catName": "Płace i Wynagrodzenia",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „na listach płac zatwierdzonych”, „na listach płac z zamkniętych miesięcy”, „na listach płac w których wprowadzono Pochodne stawki do obliczeń”."
+  },
+  {
+    "id": 57,
+    "displayId": 57,
+    "q": "Korekta rozliczenia rocznego podatku za dany okres nie zostanie wykonana jeśli",
+    "options": [
+      "nie będzie rozliczenia z takim samym okresem wyliczenia danych dla pracownika, które nie jest korektą",
+      "istnieje rozliczenie z innym okresem, ale częściowo pokrywającym się z podanym w korekcie",
+      "okres „Rozliczenie rocznego podatku dochodowego” jest zgodny z okresem na korekcie"
+    ],
+    "correct": [
+      0,
+      1
+    ],
+    "is_multi": true,
+    "cat": "podatki",
+    "catName": "Podatki i PIT",
+    "hint": "System umożliwia utworzenie rozliczenia rocznego podatku w wielu pozycjach nieprzekraczających liczby 12 miesięcy."
+  },
+  {
+    "id": 58,
+    "displayId": 58,
+    "q": "Podczas wyliczania wymiaru urlopu przepisywane jest saldo urlopu na nowy rok kalendarzowy. Jeśli saldo jest ujemne może zostać przepisane lub nieprzepisane. Jeśli tak, to w jaki module jest dostępny parametr i jak się nazywa",
+    "options": [
+      "moduł Administrator – Konfiguracja systemu",
+      "saldo ujemne zostaje przepisane bez ustawienia parametru",
+      "przepisz saldo ujemne urlopu"
+    ],
+    "correct": [
+      0,
+      2
+    ],
+    "is_multi": true,
+    "cat": "grafiki",
+    "catName": "Czas Pracy i Grafiki",
+    "hint": "Rejestrację urlopu wypoczynkowego w systemie AMMS można wykonać zarówno w module **Kadry** (w ewidencji nieobecności pracownika), jak i bezpośrednio w module **Grafiki** (podczas edycji harmonogramu czasu pracy). Moduł Płace służy wyłącznie do naliczania wypłat."
+  },
+  {
+    "id": 59,
+    "displayId": 59,
+    "q": "Wymagalność pól „opis stanowiska, zawód GUS, zawód, grupa personelu, grupa kosztowa” w etacie sprawdzana jest na podstawie",
+    "options": [
+      "konfiguracji etatu w Słownikach – zakładka „Wymagane dane”",
+      "konfiguracji stacji roboczej zakładka „Kadry”",
+      "sprawdzanie jest wykonywane programowo"
+    ],
+    "correct": [
+      0
+    ],
+    "is_multi": false,
+    "cat": "medycyna",
+    "catName": "AMMS, NFZ i Medycyna",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „konfiguracji etatu w Słownikach – zakładka „Wymagane dane””. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 60,
+    "displayId": 60,
+    "q": "Okresy ochronne o których mowa w Kodeksie pracy umieszczane na świadectwie pracy wprowadza się",
+    "options": [
+      "w dodatkowych danych umowy",
+      "w danych ubezpieczeniowych",
+      "w nieobecnościach"
+    ],
+    "correct": [
+      0
+    ],
+    "is_multi": false,
+    "cat": "kadry",
+    "catName": "Kadry i Akta Osobowe",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „w dodatkowych danych umowy”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 61,
+    "displayId": 61,
+    "q": "Składnik może być generowany tylko na liście pochodnych w sytuacji gdy jest to",
+    "options": [
+      "składnik informacyjny z zaznaczonym polem „generacja dla pochodnych” Tak",
+      "każdy składnik płacowy wygenerowany na liście płac",
+      "nie ma takiej możliwości"
+    ],
+    "correct": [
+      0
+    ],
+    "is_multi": false,
+    "cat": "place",
+    "catName": "Płace i Wynagrodzenia",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „składnik informacyjny z zaznaczonym polem „generacja dla pochodnych” Tak”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 62,
+    "displayId": 62,
+    "q": "Procent podatku do rozliczeń na listach płac, dla pierwszego progu podatkowego, może być pobierany",
+    "options": [
+      "z danych podatkowych pracownika",
+      "z parametrów płacowych",
+      "ze stawek podatkowych w Słowniku"
+    ],
+    "correct": [
+      0,
+      2
+    ],
+    "is_multi": true,
+    "cat": "podatki",
+    "catName": "Podatki i PIT",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „z danych podatkowych pracownika”, „ze stawek podatkowych w Słowniku”."
+  },
+  {
+    "id": 63,
+    "displayId": 63,
+    "q": "W raporcie AOTMiT",
+    "options": [
+      "dane dla tabeli UoP wykonywane są tylko dla umów o pracę, zlecenie, dzieło",
+      "dane dla tabeli podwykonawstwo medyczne wykonywane dla umów typu kontrakt",
+      "w tabeli umowy zlecenia pozostałe umowy"
+    ],
+    "correct": [
+      0,
+      1
+    ],
+    "is_multi": true,
+    "cat": "medycyna",
+    "catName": "AMMS, NFZ i Medycyna",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „dane dla tabeli UoP wykonywane są tylko dla umów o pracę, zlecenie, dzieło”, „dane dla tabeli podwykonawstwo medyczne wykonywane dla umów typu kontrakt”."
+  },
+  {
+    "id": 64,
+    "displayId": 64,
+    "q": "W raporcie AOTMiT rodzaj świadczenia może być pobierany",
+    "options": [
+      "ze słownika miejsc zatrudnienia",
+      "ze słownika użytkownika",
+      "kartoteki pracownika"
+    ],
+    "correct": [
+      1
+    ],
+    "is_multi": false,
+    "cat": "medycyna",
+    "catName": "AMMS, NFZ i Medycyna",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „ze słownika użytkownika”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 65,
+    "displayId": 65,
+    "q": "Grupowe wprowadzenie danych do pozycji grafika można wykonać wg",
+    "options": [
+      "schematu pracy",
+      "rodzaju godzin",
+      "podanej liczby godzin"
+    ],
+    "correct": [
+      0,
+      1
+    ],
+    "is_multi": true,
+    "cat": "grafiki",
+    "catName": "Czas Pracy i Grafiki",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „schematu pracy”, „rodzaju godzin”."
+  },
+  {
+    "id": 66,
+    "displayId": 66,
+    "q": "W rozliczeniu rocznym składki obowiązkowe na rzecz związków zawodowych mogą mieć wartość ujemną jeśli",
+    "options": [
+      "wartość parametru PITMAXSKLO jest mniejsza niż wyliczona dla rozliczenia",
+      "wartość parametru PITMAXSKLO jest równa 0",
+      "wartość parametru PITMAXSKLO jest większa niż wyliczona dla rozliczenia"
+    ],
+    "correct": [
+      0,
+      1
+    ],
+    "is_multi": true,
+    "cat": "kadry",
+    "catName": "Kadry i Akta Osobowe",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „wartość parametru PITMAXSKLO jest mniejsza niż wyliczona dla rozliczenia”, „wartość parametru PITMAXSKLO jest równa 0”."
+  },
+  {
+    "id": 67,
+    "displayId": 67,
+    "q": "Opcja „Raport AOTMiT’ jest dostępna",
+    "options": [
+      "po przydzieleniu odpowiednich praw użytkownika lub administratora",
+      "po wybraniu praw w DBAP takich jak dla opcji ‘Wynagrodzenia informacja NFZ’",
+      "dla każdego bez konieczności nadawania uprawnień"
+    ],
+    "correct": [
+      0,
+      1
+    ],
+    "is_multi": true,
+    "cat": "medycyna",
+    "catName": "AMMS, NFZ i Medycyna",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „po przydzieleniu odpowiednich praw użytkownika lub administratora”, „po wybraniu praw w DBAP takich jak dla opcji ‘Wynagrodzenia informacja NFZ’”."
+  },
+  {
+    "id": 68,
+    "displayId": 68,
+    "q": "Dane dla formularza ZUS RUD podpowiadane są na podstawie",
+    "options": [
+      "typu pracownika wprowadzonego w Kadrach",
+      "typu umowy z zaznaczonym parametrem ‘Formularz RUD’ w słowniku typów umów",
+      "typu etatu"
+    ],
+    "correct": [
+      1
+    ],
+    "is_multi": false,
+    "cat": "zus",
+    "catName": "ZUS, PPK i Ubezpieczenia",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „typu umowy z zaznaczonym parametrem ‘Formularz RUD’ w słowniku typów umów”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 69,
+    "displayId": 69,
+    "q": "?Nieobecności pomniejszające wynagrodzenie nie są rozliczane na listach typu",
+    "options": [
+      "indywidualna",
+      "dyżurowa",
+      "przeszacowana"
+    ],
+    "correct": [
+      1,
+      2
+    ],
+    "is_multi": true,
+    "cat": "grafiki",
+    "catName": "Czas Pracy i Grafiki",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „dyżurowa”, „przeszacowana”."
+  },
+  {
+    "id": 70,
+    "displayId": 70,
+    "q": "Wprowadzenie w Kadrach pracownika o takim samym Pesel jaki już w systemie widnieje jest",
+    "options": [
+      "możliwe gdy w Konfiguracji w polu Pracownik – blokada pon. Wprowadzania parametr ma wartość ‘Nie’",
+      "nie możliwe gdy w Konfiguracji w polu Pracownik – blokada pon. Wprowadzania parametr ma wartość ‘Tak’",
+      "nie możliwe i nie wymaga żadnych ustawień"
+    ],
+    "correct": [
+      0,
+      1
+    ],
+    "is_multi": true,
+    "cat": "zus",
+    "catName": "ZUS, PPK i Ubezpieczenia",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „możliwe gdy w Konfiguracji w polu Pracownik – blokada pon. Wprowadzania parametr ma wartość ‘Nie’”, „nie możliwe gdy w Konfiguracji w polu Pracownik – blokada pon. Wprowadzania parametr ma wartość ‘Tak’”."
+  },
+  {
+    "id": 71,
+    "displayId": 71,
+    "q": "W raporcie AOTMiT dane dotyczące miejsc OPK mogą być wyliczane",
+    "options": [
+      "na podstawie podziału kosztów wyliczanego dla list płac wg definicji składników w eksporcie do FKK (operacje HD)",
+      "na podstawie miejsca zatrudnienia wprowadzonego w pozycjach grafika",
+      "na podstawie danych wprowadzonych do etatów umów"
+    ],
+    "correct": [
+      0
+    ],
+    "is_multi": false,
+    "cat": "medycyna",
+    "catName": "AMMS, NFZ i Medycyna",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „na podstawie podziału kosztów wyliczanego dla list płac wg definicji składników w eksporcie do FKK (operacje HD)”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 72,
+    "displayId": 72,
+    "q": "W Imporcie danych z grafika do Rozliczenia typ importu podpowiadany jest na podstawie",
+    "options": [
+      "ustawienia w Konfiguracji stacji roboczej w polu „Rozliczenie typ importu”",
+      "wbudowanego w systemie typu „razem”",
+      "ustawienia zapamiętywania formatek – podpowiada typ poprzednio wybierany"
+    ],
+    "correct": [
+      0
+    ],
+    "is_multi": false,
+    "cat": "grafiki",
+    "catName": "Czas Pracy i Grafiki",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „ustawienia w Konfiguracji stacji roboczej w polu „Rozliczenie typ importu””. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 73,
+    "displayId": 73,
+    "q": "Wprowadzona w systemie KP suma producenta 45 stosowana do obliczenia podstawy składek na ubezpieczenie chorobowego wymaga dla prawidłowego działania",
+    "options": [
+      "wprowadzenia w Słowniku dowolnej sumy pośredniej i podpięcie składników dla niej odpowiednich",
+      "przekodowania utworzonej sumy pośredniej na sumę producenta",
+      "przeliczenia rejestru dochodów"
+    ],
+    "correct": [
+      0,
+      1,
+      2
+    ],
+    "is_multi": true,
+    "cat": "zus",
+    "catName": "ZUS, PPK i Ubezpieczenia",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „wprowadzenia w Słowniku dowolnej sumy pośredniej i podpięcie składników dla niej odpowiednich”, „przekodowania utworzonej sumy pośredniej na sumę producenta”, „przeliczenia rejestru dochodów”."
+  },
+  {
+    "id": 74,
+    "displayId": 74,
+    "q": "Nazwa pliku z paskami wynagrodzeń, formularzy PIT może zawierać tylko numer ewidencyjny pracownika gdy",
+    "options": [
+      "pracownik jest obcokrajowcem",
+      "zostanie wybrana taka opcja w momencie tworzenia pliku XML",
+      "zostanie to zaznaczone w Konfiguracji systemu"
+    ],
+    "correct": [
+      2
+    ],
+    "is_multi": false,
+    "cat": "podatki",
+    "catName": "Podatki i PIT",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „zostanie to zaznaczone w Konfiguracji systemu”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 75,
+    "displayId": 75,
+    "q": "Podstawę wymiaru zasiłku nie ustala się na nowo jeśli pomiędzy okresami pobierania zasiłków przerwa jest krótsza niż 1 miesiąc. Wymaga to",
+    "options": [
+      "zmiany w istniejącej definicji sposób pobierania podstawy z 3 miesięcy na 1 miesiąc",
+      "wprowadzenie kolejnej wersji podstawy z odpowiednią datą obowiązywania i pobieraniem podstawy 1 miesiąc",
+      "wprowadzenia w parametrach płacowych odpowiedniego parametru z wartością 1 miesiąc"
+    ],
+    "correct": [
+      1
+    ],
+    "is_multi": false,
+    "cat": "kadry",
+    "catName": "Kadry i Akta Osobowe",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „wprowadzenie kolejnej wersji podstawy z odpowiednią datą obowiązywania i pobieraniem podstawy 1 miesiąc”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 76,
+    "displayId": 76,
+    "q": "Opcja „Transfer PPK” wykorzystywana jest do",
+    "options": [
+      "wprowadzania danych PPK/PPE",
+      "zmiany zarządzającego środkami zgromadzonymi na rachunkach PPK",
+      "wypłat transferowych"
+    ],
+    "correct": [
+      1,
+      2
+    ],
+    "is_multi": true,
+    "cat": "zus",
+    "catName": "ZUS, PPK i Ubezpieczenia",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „zmiany zarządzającego środkami zgromadzonymi na rachunkach PPK”, „wypłat transferowych”."
+  },
+  {
+    "id": 77,
+    "displayId": 77,
+    "q": "Podstawa średniej chorobowej zwiększana jest do kwoty płacy minimalnej w oparciu o",
+    "options": [
+      "definicję podstawy nieobecności z wybranym sposobem podwyższania do płacy minimalnej",
+      "o paramter „PLAC_MIN”",
+      "łącznik okresów"
+    ],
+    "correct": [
+      0,
+      1,
+      2
+    ],
+    "is_multi": true,
+    "cat": "place",
+    "catName": "Płace i Wynagrodzenia",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „definicję podstawy nieobecności z wybranym sposobem podwyższania do płacy minimalnej”, „o paramter „PLAC_MIN””, „łącznik okresów”."
+  },
+  {
+    "id": 78,
+    "displayId": 78,
+    "q": "Przypisano miejsce zatrudnienia w Grupie, Obsadzie i rodzaju godzin w słowniku. Wprowadzenie godzin do grafika automatycznie uzupełni OPK z",
+    "options": [
+      "grupy umów A: 501-000",
+      "obsady : 502-000",
+      "rodzaju godzin X wprowadzonego w Słowniku: 503-000"
+    ],
+    "correct": [
+      2
+    ],
+    "is_multi": false,
+    "cat": "grafiki",
+    "catName": "Czas Pracy i Grafiki",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „rodzaju godzin X wprowadzonego w Słowniku: 503-000”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 79,
+    "displayId": 79,
+    "q": "Pracodawcy przysługuje zwolnienie na okres 36 miesięcy z opłacania składek na FP, FGŚP po powrocie z urlopu macierzyńskiego informacja ta jest wprowadzona w pozycji ubezpieczenia na podstawie",
+    "options": [
+      "zaznaczenia pola „Zwolnienie ze składek na FP, FGŚP po powrocie” w Słowniku typów nieobecności dla powyższej nieobecności",
+      "wprowadzonego kodu świadczenia/przerwy w składniku płacowym",
+      "tytułu ubezpieczenia w Konfiguracji systemu"
+    ],
+    "correct": [
+      0
+    ],
+    "is_multi": false,
+    "cat": "grafiki",
+    "catName": "Czas Pracy i Grafiki",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „zaznaczenia pola „Zwolnienie ze składek na FP, FGŚP po powrocie” w Słowniku typów nieobecności dla powyższej nieobecności”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 80,
+    "displayId": 80,
+    "q": "Czy jest możliwość pobierania w systemie KP składki pracownika na PPK, gdy wstrzymana została generacja na PPK przez zakład?",
+    "options": [
+      "nie ma takiej możliwości",
+      "tak, gdy w danych PPK/PPE zaznaczono parametr „Bez wstrzymania”",
+      "nie ma parametru wstrzymującego generację PPK"
+    ],
+    "correct": [
+      1
+    ],
+    "is_multi": false,
+    "cat": "zus",
+    "catName": "ZUS, PPK i Ubezpieczenia",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „tak, gdy w danych PPK/PPE zaznaczono parametr „Bez wstrzymania””. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 81,
+    "displayId": 81,
+    "q": "W danych podatkowych pracownika ‘Ulga dla młodych’",
+    "options": [
+      "podpowiadana jest na podstawie daty urodzenia i wieku wprowadzonego w Słowiku Stawek podatkowych",
+      "wprowadzają jest automatycznie na podstawie PESELa",
+      "wprowadzana jest grupowo dla wybranych pracowników po ustawieniu w warunkach selekcji wieku 26 lat"
+    ],
+    "correct": [
+      0,
+      1
+    ],
+    "is_multi": true,
+    "cat": "podatki",
+    "catName": "Podatki i PIT",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „podpowiadana jest na podstawie daty urodzenia i wieku wprowadzonego w Słowiku Stawek podatkowych”, „wprowadzają jest automatycznie na podstawie PESELa”."
+  },
+  {
+    "id": 82,
+    "displayId": 82,
+    "q": "Zaprzestanie wypłaty w definicji podstawy nieobecności jest możliwe dla składników typu",
+    "options": [
+      "dyżury – składniki z list, nadgodziny – składniki z list, godziny przepracowane – składniki z list",
+      "premie miesięczne – składniki z list",
+      "dowolne inne składniki – miesiąc, dowolne inne składniki – okres"
+    ],
+    "correct": [
+      0,
+      2
+    ],
+    "is_multi": true,
+    "cat": "grafiki",
+    "catName": "Czas Pracy i Grafiki",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „dyżury – składniki z list, nadgodziny – składniki z list, godziny przepracowane – składniki z list”, „dowolne inne składniki – miesiąc, dowolne inne składniki – okres”."
+  },
+  {
+    "id": 83,
+    "displayId": 83,
+    "q": "Rezygnację ze stosowania Rozporządzenia Ministra Finansów w sprawie przesunięcia terminu pobrania zaliczki można wprowadzić w danych podatkowych",
+    "options": [
+      "zaznaczając Umowa o pracę – niestosowane",
+      "zaznaczając Umowa zlecenie – niestosowane",
+      "nie ma takiej możliwości"
+    ],
+    "correct": [
+      0,
+      1
+    ],
+    "is_multi": true,
+    "cat": "podatki",
+    "catName": "Podatki i PIT",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „zaznaczając Umowa o pracę – niestosowane”, „zaznaczając Umowa zlecenie – niestosowane”."
+  },
+  {
+    "id": 84,
+    "displayId": 84,
+    "q": "W konfiguracji eksportu do FKK w pozycji dokumentu eksportowego opis jaki pojawia się przy pozycji dokumentu w systemie finansowo-księgowym",
+    "options": [
+      "generowany jest na podstawie predefiniowanych wartości",
+      "generowany jest w oparciu o dowolny wprowadzony tekst",
+      "wprowadzany jest w module FKK"
+    ],
+    "correct": [
+      0,
+      1,
+      2
+    ],
+    "is_multi": true,
+    "cat": "admin",
+    "catName": "Konfiguracja i Administracja",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „generowany jest na podstawie predefiniowanych wartości”, „generowany jest w oparciu o dowolny wprowadzony tekst”, „wprowadzany jest w module FKK”."
+  },
+  {
+    "id": 85,
+    "displayId": 85,
+    "q": "W podsumowaniu na liście płac w polu „Doch. Zwol.” Dane wyliczane są z tytułu",
+    "options": [
+      "zwrotu podatku od PPK",
+      "ulga młody, ulga emeryt, ulga rodzina 4+, ulga powrót",
+      "ulga klasa średnia"
+    ],
+    "correct": [
+      1
+    ],
+    "is_multi": false,
+    "cat": "place",
+    "catName": "Płace i Wynagrodzenia",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „ulga młody, ulga emeryt, ulga rodzina 4+, ulga powrót”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 86,
+    "displayId": 86,
+    "q": "Ilość poręczanych pożyczek jest sprawdzana w operacji dopisywania poręczyciela jeśli wprowadzono wartość większą od 0 w",
+    "options": [
+      "danych kasy",
+      "danych pożyczki – zakładka poręczyciele",
+      "konfiguracji stacji roboczej – zakładka Kasy Pożyczkowe"
+    ],
+    "correct": [
+      0
+    ],
+    "is_multi": false,
+    "cat": "kadry",
+    "catName": "Kadry i Akta Osobowe",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „danych kasy”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 87,
+    "displayId": 87,
+    "q": "W jaki sposób w tytule przelewu uzyskać opis zajęcia sądowego",
+    "options": [
+      "nie ma takiej możliwości",
+      "poprzez import list płac do kilku przelewów, tak aby w każdym przelewie znajdowało się tylko jedno zajęcie",
+      "poprzez parametr „Dopisanie – zajęcia sądowe’ w nagłówku przelewu"
+    ],
+    "correct": [
+      2
+    ],
+    "is_multi": false,
+    "cat": "kadry",
+    "catName": "Kadry i Akta Osobowe",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „poprzez parametr „Dopisanie – zajęcia sądowe’ w nagłówku przelewu”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 88,
+    "displayId": 88,
+    "q": "Podstawa typu średnia chorobowa pobierana jest z poprzedniej nieobecności w okresie kiedy nie minęły 3 miesiące kalendarzowe jeśli",
+    "options": [
+      "nie nastąpiła zmiana wymiaru czasu pracy",
+      "nastąpiła zmiana wymiaru czasu pracy",
+      "nastąpiła zmiana wymiaru czasu pracy i w nieobecności zaznaczono wartość w polu ‘Tarcza’ na Tak"
+    ],
+    "correct": [
+      0,
+      2
+    ],
+    "is_multi": true,
+    "cat": "grafiki",
+    "catName": "Czas Pracy i Grafiki",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „nie nastąpiła zmiana wymiaru czasu pracy”, „nastąpiła zmiana wymiaru czasu pracy i w nieobecności zaznaczono wartość w polu ‘Tarcza’ na Tak”."
+  },
+  {
+    "id": 89,
+    "displayId": 89,
+    "q": "Ostrzeżenie przed wprowadzeniem nieaktywnego miejsca zatrudnienia do etatu jest możliwe",
+    "options": [
+      "gdy w parametrach kadrowych zostanie ustawiony parametr miejsca zatrudnienia",
+      "ponieważ system sprawdza znacznik aktywności bez dodatkowych działań użytkownika",
+      "gdy w słowniku typów etatu wprowadzimy wymagane dane: miejsce zatrudniania aktywne"
+    ],
+    "correct": [
+      2
+    ],
+    "is_multi": false,
+    "cat": "kadry",
+    "catName": "Kadry i Akta Osobowe",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „gdy w słowniku typów etatu wprowadzimy wymagane dane: miejsce zatrudniania aktywne”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 90,
+    "displayId": 90,
+    "q": "W danych umowy pole „Nadl. Nieobliczane”",
+    "options": [
+      "określa czy dla umowy w pozycjach grafika są podpowiadane godziny nadliczbowe",
+      "Ustawione na TAK uruchamia naliczanie godzin nadliczbowych",
+      "liczy godziny nadliczbowe w grafiku powyżej normy dobowej"
+    ],
+    "correct": [
+      0
+    ],
+    "is_multi": false,
+    "cat": "kadry",
+    "catName": "Kadry i Akta Osobowe",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „określa czy dla umowy w pozycjach grafika są podpowiadane godziny nadliczbowe”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 91,
+    "displayId": 91,
+    "q": "W funkcji „podstawy ubezpieczeń” zakładka „informacja z ZUS” jest",
+    "options": [
+      "wykorzystywana do rozliczenia informacji z ZUS na listach płac i przygotowania odpowiednich korekt deklaracji przekazywanych do ZUS",
+      "wykorzystywana do utworzenia listy płac „Rozliczenie informacji z ZUS” dla typu indywidualna lub umowa zlecenie",
+      "wykorzystywana do rozliczenie przekroczenia 30-krotności na liście typu podstawowa lub umowa zlecenie"
+    ],
+    "correct": [
+      0,
+      1
+    ],
+    "is_multi": true,
+    "cat": "zus",
+    "catName": "ZUS, PPK i Ubezpieczenia",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „wykorzystywana do rozliczenia informacji z ZUS na listach płac i przygotowania odpowiednich korekt deklaracji przekazywanych do ZUS”, „wykorzystywana do utworzenia listy płac „Rozliczenie informacji z ZUS” dla typu indywidualna lub umowa zlecenie”."
+  },
+  {
+    "id": 92,
+    "displayId": 92,
+    "q": "W danych podatkowych Kasy parametr „Zwrot wkładu – kontrola na liście” dotyczy",
+    "options": [
+      "kasy typu PKZP",
+      "kasy innego typu",
+      "kasy typu PKZP i kasy innego typu"
+    ],
+    "correct": [
+      0
+    ],
+    "is_multi": false,
+    "cat": "podatki",
+    "catName": "Podatki i PIT",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „kasy typu PKZP”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 93,
+    "displayId": 93,
+    "q": "Przy próbie wycofania generacji listy płac pojawia się komunikat „Istnieje generacja danych na listach płac w miesiącu o wyższym numerze”. Komunikat pojawia się w następujących sytuacjach",
+    "options": [
+      "ustawiono w Konfiguracji systemu sprawdzanie kolejności generacji",
+      "zaznaczono w Konfiguracji systemu na TAK przy parametrze Kolejność generacji – data wypłaty",
+      "zaznaczono w Konfiguracji stacji roboczej parametr Kontrola generacji list płac – TAK"
+    ],
+    "correct": [
+      0
+    ],
+    "is_multi": false,
+    "cat": "place",
+    "catName": "Płace i Wynagrodzenia",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „ustawiono w Konfiguracji systemu sprawdzanie kolejności generacji”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 94,
+    "displayId": 94,
+    "q": "Pobieranie E-ZLA z serwisu PUE ZUS wymaga",
+    "options": [
+      "zakupienia licencji na funkcjonalność systemu Kadry-Płace",
+      "skonfigurowania w Administratorze parametrów importu E-ZLA",
+      "w słowniku typów nieobecności określenia w przynajmniej jednej nieobecności Rodzaj dla e-ZLA"
+    ],
+    "correct": [
+      0,
+      1,
+      2
+    ],
+    "is_multi": true,
+    "cat": "zus",
+    "catName": "ZUS, PPK i Ubezpieczenia",
+    "hint": "Pobieranie e-ZLA wymaga: aktywnej licencji, konfiguracji parametrów importu w Administratorze oraz przypisania parametru 'Rodzaj dla e-ZLA' w słowniku nieobecności."
+  },
+  {
+    "id": 95,
+    "displayId": 95,
+    "q": "W systemie KP jest możliwość wyliczania danych dotyczących pochodnych dla list płac zamkniętych z okresów wcześniejszych niż aktualny miesiąc płacowy",
+    "options": [
+      "Tak",
+      "Nie"
+    ],
+    "correct": [
+      0
+    ],
+    "is_multi": false,
+    "cat": "place",
+    "catName": "Płace i Wynagrodzenia",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „Tak”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 96,
+    "displayId": 96,
+    "q": "Od czego zależy wykonywanie kontroli „Dla umowy znaleziono nieobecności o statusie „Do obliczeń”",
+    "options": [
+      "od ustawienia w Słowniku nieobecności kontroli statusu S dla list płac",
+      "od tego czy dany typ nieobecności ma definicję podstawy nieobecności",
+      "czy może być rozliczany na danym typie listy płac"
+    ],
+    "correct": [
+      0,
+      2
+    ],
+    "is_multi": true,
+    "cat": "grafiki",
+    "catName": "Czas Pracy i Grafiki",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „od ustawienia w Słowniku nieobecności kontroli statusu S dla list płac”, „czy może być rozliczany na danym typie listy płac”."
+  },
+  {
+    "id": 97,
+    "displayId": 97,
+    "q": "Zaznaczenie w Konfiguracji systemu „Dyżury podział kosztów przepisz” spowoduje, że",
+    "options": [
+      "podział kosztów wprowadzony w Płacach dla dyżurów i nadgodzin zostanie przepisany do następnego miesiąca",
+      "w imporcie godzin podział kosztów jest pozostawiany",
+      "zmiana liczby godzin automatycznie przeliczana jest w pozycjach podziału kosztów"
+    ],
+    "correct": [
+      0,
+      2
+    ],
+    "is_multi": true,
+    "cat": "grafiki",
+    "catName": "Czas Pracy i Grafiki",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „podział kosztów wprowadzony w Płacach dla dyżurów i nadgodzin zostanie przepisany do następnego miesiąca”, „zmiana liczby godzin automatycznie przeliczana jest w pozycjach podziału kosztów”."
+  },
+  {
+    "id": 98,
+    "displayId": 98,
+    "q": "Podczas tworzenia wykazu lub pisma",
+    "options": [
+      "wstępnie nadawane są uprawnienia do wykazu/pisma tylko dla użytkownika go tworzącego",
+      "utworzony wykaz/pismo są automatycznie dostępne wszystkim użytkownikom",
+      "nie ma ograniczeń w zakresie użytkowników"
+    ],
+    "correct": [
+      0
+    ],
+    "is_multi": false,
+    "cat": "kadry",
+    "catName": "Kadry i Akta Osobowe",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „wstępnie nadawane są uprawnienia do wykazu/pisma tylko dla użytkownika go tworzącego”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 99,
+    "displayId": 99,
+    "q": "Pobranie godzin do przeniesienia na początek następnego okresu rozliczeniowego nie zostanie wykonane jeśli",
+    "options": [
+      "w Słowniku typów umów zaznaczymy „Bez początku okresu” w pobieraniu godzin",
+      "w Grafiku z poprzedniego okresu nie będzie godzin do przeniesienia",
+      "w Konfiguracji systemu nie zostaną skonfigurowane Godziny z przeniesienia"
+    ],
+    "correct": [
+      0,
+      1
+    ],
+    "is_multi": true,
+    "cat": "grafiki",
+    "catName": "Czas Pracy i Grafiki",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „w Słowniku typów umów zaznaczymy „Bez początku okresu” w pobieraniu godzin”, „w Grafiku z poprzedniego okresu nie będzie godzin do przeniesienia”."
+  },
+  {
+    "id": 100,
+    "displayId": 100,
+    "q": "Opcja wyszukiwania dowolnego ciągu znaków zastosowanych w algorytmie sprawdza algorytm w",
+    "options": [
+      "słowniku składników płacowych",
+      "słowniku algorytmów dla typów etatów",
+      "słowniku stawek do obliczeń (algorytmy dla składników obliczanych dla pochodnych)"
+    ],
+    "correct": [
+      0,
+      1,
+      2
+    ],
+    "is_multi": true,
+    "cat": "kadry",
+    "catName": "Kadry i Akta Osobowe",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „słowniku składników płacowych”, „słowniku algorytmów dla typów etatów”, „słowniku stawek do obliczeń (algorytmy dla składników obliczanych dla pochodnych)”."
+  },
+  {
+    "id": 101,
+    "displayId": 101,
+    "q": "W Bilansie Kasy w Module Pożyczki można",
+    "options": [
+      "wyświetlić listę osób, które zostały uwzględnione w tym bilansie",
+      "zobaczyć operacje w ramach kasy dla poszczególnych osób",
+      "zobaczyć dane osoby w ramach kasy"
+    ],
+    "correct": [
+      0,
+      1,
+      2
+    ],
+    "is_multi": true,
+    "cat": "pozyczki",
+    "catName": "Kasa Pożyczkowa (PKZP)",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „wyświetlić listę osób, które zostały uwzględnione w tym bilansie”, „zobaczyć operacje w ramach kasy dla poszczególnych osób”, „zobaczyć dane osoby w ramach kasy”."
+  },
+  {
+    "id": 102,
+    "displayId": 102,
+    "q": "Zmiana miejsca zatrudnienia nieaktualnego w FKK w operacji wliczania podstawy dla nieobecności",
+    "options": [
+      "jest możliwa gdy w Parametry – Płace – parametr NIEOBOPKGL ma wartość <>0",
+      "nie jest możliwa",
+      "wymaga przeksięgowania w module FKK na aktualne miejsce zatrudnienia"
+    ],
+    "correct": [
+      0
+    ],
+    "is_multi": false,
+    "cat": "grafiki",
+    "catName": "Czas Pracy i Grafiki",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „jest możliwa gdy w Parametry – Płace – parametr NIEOBOPKGL ma wartość <>0”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 103,
+    "displayId": 103,
+    "q": "W momencie zwolnienia pracownika wypełniana jest w danych osobowych data od której akta pracownika mogą zostać usunięte. Podpowiadana data jest",
+    "options": [
+      "bieżącą datą systemową",
+      "10 lat od daty końca roku zwolnienia pracownika zatrudnionego od 01.01.2019",
+      "50 lat od daty końca roku zwolnienia pracownika zatrudnionego przed 01/01/2019"
+    ],
+    "correct": [
+      1,
+      2
+    ],
+    "is_multi": true,
+    "cat": "kadry",
+    "catName": "Kadry i Akta Osobowe",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „10 lat od daty końca roku zwolnienia pracownika zatrudnionego od 01.01.2019”, „50 lat od daty końca roku zwolnienia pracownika zatrudnionego przed 01/01/2019”."
+  },
+  {
+    "id": 104,
+    "displayId": 104,
+    "q": "Podział nieobecności:",
+    "options": [
+      "nieobecność powyżej 1 dnia",
+      "nieobecność dla której nie ma korekty",
+      "dla korekty"
+    ],
+    "correct": [
+      0,
+      1,
+      2
+    ],
+    "is_multi": true,
+    "cat": "grafiki",
+    "catName": "Czas Pracy i Grafiki",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „nieobecność powyżej 1 dnia”, „nieobecność dla której nie ma korekty”, „dla korekty”."
+  },
+  {
+    "id": 105,
+    "displayId": 105,
+    "q": "Skąd jest podpowiadana data pobrania PPK",
+    "options": [
+      "z parametru",
+      "z daty wypłaty",
+      "z miesiąca bieżącego"
+    ],
+    "correct": [
+      2
+    ],
+    "is_multi": false,
+    "cat": "zus",
+    "catName": "ZUS, PPK i Ubezpieczenia",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „z miesiąca bieżącego”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 106,
+    "displayId": 106,
+    "q": "W etacie podział kosztów do listy jakie są konsekwencje:",
+    "options": [
+      "na liście generowane jest z innymi miejscami zatrudnienia",
+      "zmiana miejsca zatrudnienia w etacie",
+      "eksport do FKK"
+    ],
+    "correct": [
+      2
+    ],
+    "is_multi": false,
+    "cat": "kadry",
+    "catName": "Kadry i Akta Osobowe",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „eksport do FKK”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 107,
+    "displayId": 107,
+    "q": "Do czego służy Rozliczenie informacji NFZ",
+    "options": [
+      "do pomocy wyliczenia podwyżek",
+      "do pliku CSV",
+      ""
+    ],
+    "correct": [
+      0
+    ],
+    "is_multi": false,
+    "cat": "medycyna",
+    "catName": "AMMS, NFZ i Medycyna",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „do pomocy wyliczenia podwyżek”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 108,
+    "displayId": 108,
+    "q": "Opcja sprawdzająca poprawność działania algorytmów w Administratorze pozwala:",
+    "options": [
+      "wyszukać algorytmy z wybraną frazą,",
+      "wskazać które funkcje Centurowe nie działają w Net,",
+      "wykonać test możliwości zapisu algorytmu w Net."
+    ],
+    "correct": [
+      0
+    ],
+    "is_multi": false,
+    "cat": "admin",
+    "catName": "Konfiguracja i Administracja",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „wyszukać algorytmy z wybraną frazą,”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 109,
+    "displayId": 109,
+    "q": "W Słowniku stawek podatkowych wprowadzono pola zawierające kwoty ulgi podatkowej miesięcznej odpowiadającej:",
+    "options": [
+      "1/12 kwoty wolnej",
+      "1/24 kwoty wolnej",
+      "1/36 kwoty wolnej."
+    ],
+    "correct": [
+      0,
+      1,
+      2
+    ],
+    "is_multi": true,
+    "cat": "podatki",
+    "catName": "Podatki i PIT",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „1/12 kwoty wolnej”, „1/24 kwoty wolnej”, „1/36 kwoty wolnej.”."
+  },
+  {
+    "id": 110,
+    "displayId": 110,
+    "q": "Na wysokość wypłaty wg „Definicji dodatku dla kierowników specjalizacji” ma wpływ:",
+    "options": [
+      "kwota dodatku przysługująca za nadzór nad jedną osobą",
+      "maksymalna liczba osób, które może nadzorować,",
+      "nieobecności osoby nadzorowanej."
+    ],
+    "correct": [
+      0,
+      1,
+      2
+    ],
+    "is_multi": true,
+    "cat": "medycyna",
+    "catName": "AMMS, NFZ i Medycyna",
+    "hint": "Na dodatek wpływają: stawka za nadzór nad jedną osobą, maksymalna liczba osób nadzorowanych oraz absencje osoby nadzorowanej."
+  },
+  {
+    "id": 111,
+    "displayId": 111,
+    "q": "Czy po włączeniu synchronizacji personelu medycznego w AMMS jest przesyłany adres mail z danych osobowych pracownika z Kadr?",
+    "options": [
+      "Tak",
+      "Nie"
+    ],
+    "correct": [
+      0
+    ],
+    "is_multi": false,
+    "cat": "medycyna",
+    "catName": "AMMS, NFZ i Medycyna",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „Tak”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 112,
+    "displayId": 112,
+    "q": "Podczas wprowadzania w Kadrach korekty nieobecności rozliczonej w bieżącym miesiącu płacowym system:",
+    "options": [
+      "sprawdza czy nieobecność korygowana jest już rozliczona ale nie wypłacona (status R)",
+      "po potwierdzeniu chęci wprowadzenia korekty usuwane są pozycje rozliczenia nieobecności korygowanej,",
+      "modyfikowany jest odpowiednio status rozliczenia nieobecności."
+    ],
+    "correct": [
+      0
+    ],
+    "is_multi": false,
+    "cat": "grafiki",
+    "catName": "Czas Pracy i Grafiki",
+    "hint": "Prawidłowa odpowiedź w kluczu egzaminacyjnym to: „sprawdza czy nieobecność korygowana jest już rozliczona ale nie wypłacona (status R)”. Wynika to bezpośrednio z konfiguracji systemu i przepisów kadrowo-płacowych."
+  },
+  {
+    "id": 113,
+    "displayId": 113,
+    "q": "Jaka może być ilość znaków kodów stawek do obliczeń?",
+    "options": [
+      "Od 1 do 5 znaków",
+      "Maksymalnie 3 znaki",
+      "2 znaki"
+    ],
+    "correct": [
+      0,
+      2
+    ],
+    "is_multi": true,
+    "cat": "kadry",
+    "catName": "Kadry i Akta Osobowe",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „Od 1 do 5 znaków”, „2 znaki”."
+  },
+  {
+    "id": 114,
+    "displayId": 114,
+    "q": "W historii zatrudnienia można dodać kolejną pozycję:",
+    "options": [
+      "korzystając z przycisku Nowy(F7),",
+      "pobierając z pliku,",
+      "korzystając z przycisku Nowy wzr. (F11)- nowy wpis w historii zatrudnienia na podstawie istniejącego."
+    ],
+    "correct": [
+      0,
+      2
+    ],
+    "is_multi": true,
+    "cat": "kadry",
+    "catName": "Kadry i Akta Osobowe",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „korzystając z przycisku Nowy(F7),”, „korzystając z przycisku Nowy wzr. (F11)- nowy wpis w historii zatrudnienia na podstawie istniejącego.”."
+  },
+  {
+    "id": 115,
+    "displayId": 115,
+    "q": "W danych dotyczących specjalizacji wprowadzono:",
+    "options": [
+      "okres pełnienia nadzoru przez kierownika specjalizacji,",
+      "numer umowy kierownika specjalizacji,",
+      "tryb uzyskiwania specjalizacji."
+    ],
+    "correct": [
+      0,
+      1,
+      2
+    ],
+    "is_multi": true,
+    "cat": "medycyna",
+    "catName": "AMMS, NFZ i Medycyna",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „okres pełnienia nadzoru przez kierownika specjalizacji,”, „numer umowy kierownika specjalizacji,”, „tryb uzyskiwania specjalizacji.”."
+  },
+  {
+    "id": 116,
+    "displayId": 116,
+    "q": "W operacji „Otwarcie miesiąca” system pozwoli przepisać do nowego miesiąca otwarte listy płac pod warunkiem :",
+    "options": [
+      "że w danych podstawowych listy zaznaczono „Przepisz do nowego miesiąca”, „ Status otwarta przepisz” ,",
+      "że jest to tylko lista podstawowa,",
+      "że nie ma ręcznie wprowadzonych korekt w danych podatkowych dotyczących podstaw podatku PPK/PPE lub nadwyżek zaliczek na podatek."
+    ],
+    "correct": [
+      0,
+      2
+    ],
+    "is_multi": true,
+    "cat": "place",
+    "catName": "Płace i Wynagrodzenia",
+    "hint": "To jest **pytanie wielokrotnego wyboru**. W oryginalnym arkuszu klucza egzaminacyjnego zaznaczono poprawne odpowiedzi: „że w danych podstawowych listy zaznaczono „Przepisz do nowego miesiąca”, „ Status otwarta przepisz” ,”, „że nie ma ręcznie wprowadzonych korekt w danych podatkowych dotyczących podstaw podatku PPK/PPE lub nadwyżek zaliczek na podatek.”."
+  }
+];
+    const storageKey = 'kp_suite_kp';
+
+    let currentTab = 'quiz';
+    let filteredQuestions = [...rawQuestions];
+    let quizIndex = 0;
+    let flashcardIndex = 0;
+    let userAnswers = {};
+    let currentMultiSelections = [];
+
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) userAnswers = JSON.parse(saved);
+    } catch(e) {}
+
+    function initApp() {
+      initEventListeners();
+      updateFilteredQuestions();
+      updateStats();
+      renderQuizQuestion();
+      renderFlashcard();
+      renderList();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initApp);
+    } else {
+      initApp();
+    }
+
+    function initEventListeners() {
+      const catSelect = document.getElementById('category-select');
+      if (catSelect) {
+        catSelect.onchange = () => {
+          updateFilteredQuestions();
+          quizIndex = 0;
+          flashcardIndex = 0;
+          renderQuizQuestion();
+          renderFlashcard();
+          renderList();
+        };
+      }
+
+      const searchInput = document.getElementById('search-input');
+      if (searchInput) {
+        searchInput.oninput = () => {
+          updateFilteredQuestions();
+          quizIndex = 0;
+          flashcardIndex = 0;
+          renderQuizQuestion();
+          renderFlashcard();
+          renderList();
+        };
+      }
+
+      const multiFilter = document.getElementById('filter-multi');
+      if (multiFilter) {
+        multiFilter.onchange = () => {
+          updateFilteredQuestions();
+          quizIndex = 0;
+          flashcardIndex = 0;
+          renderQuizQuestion();
+          renderFlashcard();
+          renderList();
+        };
+      }
+
+      const mistakesFilter = document.getElementById('filter-mistakes');
+      if (mistakesFilter) {
+        mistakesFilter.onchange = () => {
+          updateFilteredQuestions();
+          quizIndex = 0;
+          flashcardIndex = 0;
+          renderQuizQuestion();
+          renderFlashcard();
+          renderList();
+        };
+      }
+
+      const btnPrev = document.getElementById('btn-quiz-prev');
+      if (btnPrev) {
+        btnPrev.onclick = () => {
+          if (quizIndex > 0) {
+            quizIndex--;
+            renderQuizQuestion();
+          }
+        };
+      }
+
+      const btnNext = document.getElementById('btn-quiz-next');
+      if (btnNext) {
+        btnNext.onclick = () => {
+          if (quizIndex < filteredQuestions.length - 1) {
+            quizIndex++;
+            renderQuizQuestion();
+          }
+        };
+      }
+
+      const btnShuffle = document.getElementById('btn-quiz-shuffle');
+      if (btnShuffle) {
+        btnShuffle.onclick = () => {
+          if (filteredQuestions.length > 0) {
+            quizIndex = Math.floor(Math.random() * filteredQuestions.length);
+            renderQuizQuestion();
+          }
+        };
+      }
+
+      const btnReset = document.getElementById('btn-reset-stats');
+      if (btnReset) {
+        btnReset.onclick = () => {
+          if (confirm('Czy na pewno chcesz zresetować historię odpowiedzi tego modułu?')) {
+            userAnswers = {};
+            try { localStorage.removeItem(storageKey); } catch(e) {}
+            updateStats();
+            renderQuizQuestion();
+            renderList();
+          }
+        };
+      }
+
+      const btnMulti = document.getElementById('btn-submit-multi');
+      if (btnMulti) {
+        btnMulti.onclick = () => {
+          submitMultiChoice();
+        };
+      }
+
+      window.addEventListener('keydown', (e) => {
+        if (currentTab !== 'quiz') return;
+        if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) return;
+
+        if (e.key === 'ArrowRight') {
+          if (quizIndex < filteredQuestions.length - 1) {
+            quizIndex++;
+            renderQuizQuestion();
+          }
+        } else if (e.key === 'ArrowLeft') {
+          if (quizIndex > 0) {
+            quizIndex--;
+            renderQuizQuestion();
+          }
+        } else if (['1', '2', '3', '4', 'a', 'b', 'c', 'd', 'A', 'B', 'C', 'D'].includes(e.key)) {
+          let optIdx = -1;
+          if (['1', 'a', 'A'].includes(e.key)) optIdx = 0;
+          if (['2', 'b', 'B'].includes(e.key)) optIdx = 1;
+          if (['3', 'c', 'C'].includes(e.key)) optIdx = 2;
+          if (['4', 'd', 'D'].includes(e.key)) optIdx = 3;
+          const currQ = filteredQuestions[quizIndex];
+          if (currQ && optIdx >= 0 && optIdx < currQ.options.length) {
+            handleOptionClick(currQ.id, optIdx);
+          }
+        }
+      });
+    }
+
+    function setTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-blue-600', 'text-white', 'shadow');
+        btn.classList.add('text-slate-400', 'hover:text-slate-200');
+      });
+      const activeBtn = document.getElementById(`tab-${tab}`);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-blue-600', 'text-white', 'shadow');
+        activeBtn.classList.remove('text-slate-400', 'hover:text-slate-200');
+      }
+
+      ['quiz', 'flashcards', 'list'].forEach(t => {
+        const el = document.getElementById(`view-${t}`);
+        if (el) el.classList.add('hidden');
+      });
+      const targetView = document.getElementById(`view-${tab}`);
+      if (targetView) targetView.classList.remove('hidden');
+
+      if (tab === 'list') renderList();
+      if (tab === 'flashcards') renderFlashcard();
+      if (tab === 'quiz') renderQuizQuestion();
+    }
+
+    function updateFilteredQuestions() {
+      const catEl = document.getElementById('category-select');
+      const searchEl = document.getElementById('search-input');
+      const multiEl = document.getElementById('filter-multi');
+      const mistakesEl = document.getElementById('filter-mistakes');
+
+      const cat = catEl ? catEl.value : 'all';
+      const search = searchEl ? searchEl.value.toLowerCase().trim() : '';
+      const onlyMulti = multiEl ? multiEl.checked : false;
+      const onlyMistakes = mistakesEl ? mistakesEl.checked : false;
+
+      filteredQuestions = rawQuestions.filter(q => {
+        if (cat !== 'all' && q.cat !== cat) return false;
+        if (onlyMulti && !q.is_multi) return false;
+
+        if (search) {
+          const matchQ = q.q.toLowerCase().includes(search);
+          const matchOpt = q.options.some(o => o.toLowerCase().includes(search));
+          const matchHint = (q.hint || '').toLowerCase().includes(search);
+          if (!matchQ && !matchOpt && !matchHint) return false;
+        }
+
+        if (onlyMistakes) {
+          const ans = userAnswers[q.id];
+          if (ans === undefined) return false;
+          if (isUserAnswerCorrect(q, ans)) return false;
+        }
+
+        return true;
+      });
+
+      const listCountEl = document.getElementById('list-count');
+      if (listCountEl) listCountEl.textContent = filteredQuestions.length;
+    }
+
+    function isUserAnswerCorrect(q, ans) {
+      if (ans === undefined) return false;
+      if (Array.isArray(ans)) {
+        if (ans.length === 0) return false;
+        // User is correct if all picked answers are in q.correct
+        const allInCorrect = ans.every(idx => q.correct.includes(idx));
+        return allInCorrect;
+      } else {
+        return q.correct.includes(ans);
+      }
+    }
+
+    function updateStats() {
+      const total = rawQuestions.length;
+      const answeredKeys = Object.keys(userAnswers);
+      const answered = answeredKeys.length;
+      let correct = 0;
+
+      answeredKeys.forEach(id => {
+        const q = rawQuestions.find(item => item.id == id);
+        if (q) {
+          if (isUserAnswerCorrect(q, userAnswers[id])) correct++;
+        }
+      });
+
+      const accuracy = answered > 0 ? Math.round((correct / answered) * 100) : 0;
+      const countEl = document.getElementById('answered-count');
+      if (countEl) countEl.textContent = `${answered} / ${total}`;
+      const accEl = document.getElementById('accuracy-rate');
+      if (accEl) accEl.textContent = `${accuracy}% (${correct} poprawnych)`;
+    }
+
+    function renderQuizQuestion() {
+      const catBadge = document.getElementById('quiz-category');
+      const multiBadge = document.getElementById('quiz-multi-badge');
+      const indexIndicator = document.getElementById('quiz-index-indicator');
+      const qTextEl = document.getElementById('quiz-question-text');
+      const optionsContainer = document.getElementById('quiz-options');
+      const multiSubmitContainer = document.getElementById('multi-submit-container');
+      const hintBox = document.getElementById('quiz-hint-box');
+      const hintText = document.getElementById('quiz-hint-text');
+      const feedbackTitle = document.getElementById('quiz-feedback-title');
+      const feedbackIcon = document.getElementById('quiz-feedback-icon');
+
+      if (!optionsContainer) return;
+
+      if (filteredQuestions.length === 0) {
+        if (catBadge) catBadge.textContent = 'Brak pytań';
+        if (multiBadge) multiBadge.classList.add('hidden');
+        if (indexIndicator) indexIndicator.textContent = '0 / 0';
+        if (qTextEl) qTextEl.textContent = 'Nie znaleziono pytań dla wybranych filtrów.';
+        optionsContainer.innerHTML = '';
+        if (multiSubmitContainer) multiSubmitContainer.classList.add('hidden');
+        if (hintBox) hintBox.classList.add('hidden');
+        return;
+      }
+
+      if (quizIndex >= filteredQuestions.length) quizIndex = 0;
+      const q = filteredQuestions[quizIndex];
+
+      if (catBadge) catBadge.textContent = q.catName;
+      if (multiBadge) {
+        if (q.is_multi) {
+          multiBadge.classList.remove('hidden');
+        } else {
+          multiBadge.classList.add('hidden');
+        }
+      }
+      if (indexIndicator) indexIndicator.textContent = `${quizIndex + 1} / ${filteredQuestions.length}`;
+      if (qTextEl) qTextEl.textContent = `${q.displayId || q.id}. ${q.q}`;
+
+      optionsContainer.innerHTML = '';
+
+      const letters = ['A', 'B', 'C', 'D', 'E'];
+      const userSelected = userAnswers[q.id];
+      const hasAnswered = (userSelected !== undefined);
+
+      if (q.is_multi && !hasAnswered) {
+        if (multiSubmitContainer) multiSubmitContainer.classList.remove('hidden');
+      } else {
+        if (multiSubmitContainer) multiSubmitContainer.classList.add('hidden');
+      }
+
+      q.options.forEach((opt, idx) => {
+        const btn = document.createElement('div');
+        btn.className = `w-full text-left p-3.5 sm:p-4 rounded-xl border text-xs sm:text-sm font-medium transition-all flex items-start gap-3 relative cursor-pointer select-none `;
+
+        let badgeStyle = "bg-slate-800 text-slate-300 border-slate-700";
+        let cardStyle = "bg-slate-950/60 hover:bg-slate-850 border-slate-800 text-slate-200 hover:border-slate-600";
+        let indicatorContent = letters[idx];
+
+        if (hasAnswered) {
+          const isCorrectChoice = q.correct.includes(idx);
+          const userPickedThis = Array.isArray(userSelected) ? userSelected.includes(idx) : (userSelected === idx);
+
+          if (isCorrectChoice) {
+            cardStyle = "bg-emerald-950/40 border-emerald-500 text-emerald-200 shadow-md shadow-emerald-950/30";
+            badgeStyle = "bg-emerald-600 text-white border-emerald-400 font-bold";
+            indicatorContent = "✓";
+          } else if (userPickedThis && !isCorrectChoice) {
+            cardStyle = "bg-rose-950/40 border-rose-500 text-rose-200 shadow-md shadow-rose-950/30";
+            badgeStyle = "bg-rose-600 text-white border-rose-400 font-bold";
+            indicatorContent = "✗";
+          } else {
+            cardStyle = "bg-slate-950/30 border-slate-900 text-slate-500 opacity-50";
+          }
+        } else if (q.is_multi && currentMultiSelections.includes(idx)) {
+          cardStyle = "bg-purple-950/40 border-purple-500 text-purple-200";
+          badgeStyle = "bg-purple-600 text-white border-purple-400";
+          indicatorContent = "✓";
+        }
+
+        btn.className += cardStyle;
+        btn.innerHTML = `
+          <span class="w-6 h-6 rounded-lg border text-xs font-bold flex items-center justify-center shrink-0 ${badgeStyle}">
+            ${indicatorContent}
+          </span>
+          <span class="leading-relaxed flex-1">${opt}</span>
+        `;
+
+        btn.onclick = () => {
+          handleOptionClick(q.id, idx);
+        };
+
+        optionsContainer.appendChild(btn);
+      });
+
+      if (hintBox && hintText) {
+        if (hasAnswered) {
+          hintBox.classList.remove('hidden');
+          const isCorrect = isUserAnswerCorrect(q, userSelected);
+          if (isCorrect) {
+            if (q.is_multi) {
+              const correctNames = q.correct.map(ci => letters[ci]).join(' i ');
+              feedbackTitle.innerHTML = `<span class="text-emerald-400">✓ Świetnie! Poprawne odpowiedzi w tym pytaniu to: ${correctNames}</span>`;
+            } else {
+              feedbackTitle.innerHTML = `<span class="text-emerald-400">✓ Prawidłowa odpowiedź!</span>`;
+            }
+            feedbackIcon.textContent = "🎉";
+          } else {
+            const correctNames = q.correct.map(ci => letters[ci]).join(', ');
+            feedbackTitle.innerHTML = `<span class="text-rose-400">✗ Błędna odpowiedź. W kluczu docx poprawna to: ${correctNames}</span>`;
+            feedbackIcon.textContent = "💡";
+          }
+          hintText.textContent = q.hint || "Odpowiedź wynika z oficjalnego arkusza egzaminacyjnego.";
+        } else {
+          hintBox.classList.add('hidden');
+        }
+      }
+
+      const prevBtn = document.getElementById('btn-quiz-prev');
+      if (prevBtn) prevBtn.disabled = (quizIndex === 0);
+      const nextBtn = document.getElementById('btn-quiz-next');
+      if (nextBtn) nextBtn.disabled = (quizIndex === filteredQuestions.length - 1);
+    }
+
+    function handleOptionClick(qId, idx) {
+      const q = filteredQuestions.find(item => item.id == qId);
+      if (!q) return;
+
+      const hasAnswered = (userAnswers[qId] !== undefined);
+      if (hasAnswered) return; // already answered
+
+      if (q.is_multi) {
+        // Toggle multi selection
+        if (currentMultiSelections.includes(idx)) {
+          currentMultiSelections = currentMultiSelections.filter(i => i !== idx);
+        } else {
+          currentMultiSelections.push(idx);
+        }
+        renderQuizQuestion();
+      } else {
+        // Single choice immediate evaluation
+        userAnswers[qId] = idx;
+        saveAnswers();
+        updateStats();
+        renderQuizQuestion();
+      }
+    }
+
+    function submitMultiChoice() {
+      const q = filteredQuestions[quizIndex];
+      if (!q) return;
+      if (currentMultiSelections.length === 0) {
+        alert('Zaznacz przynajmniej jedną odpowiedź przed sprawdzeniem.');
+        return;
+      }
+      userAnswers[q.id] = [...currentMultiSelections];
+      currentMultiSelections = [];
+      saveAnswers();
+      updateStats();
+      renderQuizQuestion();
+    }
+
+    function saveAnswers() {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(userAnswers));
+      } catch(e) {}
+    }
+
+    function renderFlashcard() {
+      const inner = document.getElementById('fc-card-inner');
+      if (inner) inner.classList.remove('flipped');
+
+      if (filteredQuestions.length === 0) return;
+      if (flashcardIndex >= filteredQuestions.length) flashcardIndex = 0;
+      const q = filteredQuestions[flashcardIndex];
+
+      const p = document.getElementById('fc-progress');
+      if (p) p.textContent = `Karta ${flashcardIndex + 1} z ${filteredQuestions.length}`;
+      const b = document.getElementById('fc-cat-badge');
+      if (b) b.textContent = q.catName;
+      const qTxt = document.getElementById('fc-question-text');
+      if (qTxt) qTxt.textContent = `${q.displayId || q.id}. ${q.q}`;
+
+      const correctHtml = q.correct.map(idx => `
+        <div class="flex items-start gap-2 mb-2 p-2 rounded-lg bg-emerald-950/60 border border-emerald-800/60 text-emerald-200">
+          <span class="text-emerald-400 font-bold shrink-0">✓</span>
+          <span>${q.options[idx]}</span>
+        </div>
+      `).join('');
+
+      const a = document.getElementById('fc-answer-text');
+      if (a) a.innerHTML = correctHtml;
+      const h = document.getElementById('fc-hint-text');
+      if (h) h.textContent = q.hint || "Klucz odpowiedzi z pliku docx.";
+    }
+
+    function flipCard() {
+      const inner = document.getElementById('fc-card-inner');
+      if (inner) inner.classList.toggle('flipped');
+    }
+
+    function prevCard() {
+      if (flashcardIndex > 0) {
+        flashcardIndex--;
+        renderFlashcard();
+      }
+    }
+
+    function nextCard() {
+      if (flashcardIndex < filteredQuestions.length - 1) {
+        flashcardIndex++;
+        renderFlashcard();
+      }
+    }
+
+    function renderList() {
+      const container = document.getElementById('questions-list-container');
+      if (!container) return;
+
+      container.innerHTML = '';
+      const letters = ['A', 'B', 'C', 'D', 'E'];
+
+      filteredQuestions.forEach((q, qIdx) => {
+        const card = document.createElement('div');
+        card.className = "bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5 flex flex-col gap-3 shadow-md";
+
+        let optionsHtml = '';
+        q.options.forEach((opt, idx) => {
+          const isCorrect = q.correct.includes(idx);
+          if (isCorrect) {
+            optionsHtml += `
+              <div class="p-2.5 rounded-lg bg-emerald-950/40 border border-emerald-500/50 text-emerald-200 text-xs sm:text-sm font-medium flex items-start gap-2.5">
+                <span class="w-5 h-5 rounded bg-emerald-500 text-slate-950 font-bold flex items-center justify-center shrink-0 text-xs">✓</span>
+                <span class="leading-relaxed"><strong class="text-emerald-300 mr-1">${letters[idx]})</strong> ${opt}</span>
+              </div>
+            `;
+          } else {
+            optionsHtml += `
+              <div class="p-2 rounded-lg bg-slate-950/50 border border-slate-800/80 text-slate-400 text-xs sm:text-sm flex items-start gap-2.5">
+                <span class="w-5 h-5 rounded bg-slate-800 text-slate-400 flex items-center justify-center shrink-0 text-xs">${letters[idx]}</span>
+                <span class="leading-relaxed">${opt}</span>
+              </div>
+            `;
+          }
+        });
+
+        card.innerHTML = `
+          <div class="flex items-start justify-between gap-3 border-b border-slate-800/80 pb-2.5">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-xs font-semibold px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                ${q.catName}
+              </span>
+              ${q.is_multi ? '<span class="text-xs font-semibold px-2 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/30">Wielokrotny wybór</span>' : ''}
+            </div>
+            <span class="text-xs font-bold text-slate-500 font-mono">#${q.displayId || q.id}</span>
+          </div>
+
+          <h3 class="text-sm sm:text-base font-semibold text-slate-100 leading-snug">
+            ${q.displayId || q.id}. ${q.q}
+          </h3>
+
+          <div class="options-block flex flex-col gap-2 pt-1">
+            ${optionsHtml}
+          </div>
+
+          <div class="p-3 bg-slate-950 rounded-lg border border-slate-800/90 text-xs text-slate-300 flex items-start gap-2">
+            <span class="text-blue-400 text-base leading-none">💡</span>
+            <div>
+              <strong class="text-blue-300 block mb-0.5">Uzasadnienie z klucza:</strong>
+              <p class="leading-relaxed text-slate-400">${q.hint || "Zgodne z oficjalnym kluczem docx."}</p>
+            </div>
+          </div>
+        `;
+
+        container.appendChild(card);
+      });
+    }
+
+    function toggleAllAnswers(show) {
+      document.querySelectorAll('#questions-list-container .options-block').forEach(el => {
+        if (show) {
+          el.classList.remove('hidden');
+        } else {
+          el.classList.add('hidden');
+        }
+      });
+    }
+  </script>
+</body>
+</html>

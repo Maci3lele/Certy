@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Centralny Portal Pracowniczy (CPP)</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --card-bg: #1e293b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --success: #10b981;
+      --danger: #ef4444;
+      --border: #334155;
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    .hidden { display: none !important; }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    .perspective { perspective: 1000px; }
+    .flip-card-inner { transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1); transform-style: preserve-3d; }
+    .flip-card-inner.flipped { transform: rotateY(180deg); }
+    .backface-hidden { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+    .rotate-y-180 { transform: rotateY(180deg); }
+    button, select, input { cursor: pointer; }
+  </style>
+</head>
+<body class="min-h-screen custom-scrollbar flex flex-col bg-slate-950 text-slate-100">
+
+  <!-- TOP HEADER -->
+  <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-50 px-4 py-3">
+    <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <a href="index.html" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition-colors border border-slate-700 shadow-sm" title="Wróć do wyboru testów">
+          &larr; Wszystkie testy
+        </a>
+        <div class="w-9 h-9 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold text-xs shadow-inner">
+          CPP
+        </div>
+        <div>
+          <h1 class="text-base sm:text-lg font-bold tracking-tight text-white flex items-center gap-2">
+            Centralny Portal Pracowniczy (CPP)
+          </h1>
+          <p class="text-xs text-slate-400">Egzamin CPP 2026 - logowanie i architektura</p>
+        </div>
+      </div>
+
+      <!-- STATS COUNTERS -->
+      <div class="flex items-center gap-2 sm:gap-3 text-xs">
+        <div class="bg-slate-800/90 px-3 py-1.5 rounded-lg border border-slate-700 flex items-center gap-2">
+          <span class="text-slate-400">Rozwiązane:</span>
+          <span id="answered-count" class="font-bold text-white">0 / 10</span>
+        </div>
+        <div class="bg-slate-800/90 px-3 py-1.5 rounded-lg border border-slate-700 flex items-center gap-2">
+          <span class="text-slate-400">Skuteczność:</span>
+          <span id="accuracy-rate" class="font-bold text-emerald-400">0%</span>
+        </div>
+        <button id="btn-reset-stats" title="Zresetuj historię odpowiedzi" class="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-colors border border-slate-700">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- NAVIGATION TABS -->
+  <nav class="bg-slate-900 border-b border-slate-800 px-4">
+    <div class="max-w-6xl mx-auto flex items-center gap-1 sm:gap-2 overflow-x-auto py-2">
+      <button onclick="setTab('quiz')" id="tab-quiz" class="tab-btn px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-2 transition-all bg-blue-600 text-white shadow">
+        🎯 Test Egzaminacyjny
+      </button>
+      <button onclick="setTab('flashcards')" id="tab-flashcards" class="tab-btn px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-2 transition-all text-slate-400 hover:text-slate-200">
+        🎴 Fiszki 3D
+      </button>
+      <button onclick="setTab('list')" id="tab-list" class="tab-btn px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-2 transition-all text-slate-400 hover:text-slate-200">
+        📑 Wszystkie pytania z kluczem (10)
+      </button>
+    </div>
+  </nav>
+
+  <!-- MAIN VIEW -->
+  <main class="max-w-6xl w-full mx-auto p-4 sm:p-6 flex-1 flex flex-col gap-6">
+
+    <!-- FILTERS -->
+    <div id="filter-bar" class="bg-slate-900/80 p-3 sm:p-4 rounded-xl border border-slate-800 flex flex-wrap gap-3 items-center justify-between shadow-sm">
+      <div class="flex flex-wrap items-center gap-2 flex-1 min-w-[280px]">
+        <label for="category-select" class="text-xs text-slate-400 font-medium">Kategoria:</label>
+        <select id="category-select" class="bg-slate-950 border border-slate-700 text-slate-200 text-xs rounded-lg px-3 py-2 outline-none focus:border-blue-500">
+<option value="all">Wszystkie moduły (10)</option>
+          <option value="cpp">CPP</option>
+
+        </select>
+
+        <div class="relative flex-1 min-w-[180px]">
+          <input type="text" id="search-input" placeholder="Szukaj w pytaniach..." class="w-full bg-slate-950 border border-slate-700 text-slate-200 text-xs rounded-lg pl-8 pr-3 py-2 outline-none focus:border-blue-500">
+          <svg class="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer select-none bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
+          <input type="checkbox" id="filter-multi" class="rounded accent-blue-500">
+          <span>Tylko wielokrotny wybór</span>
+        </label>
+        <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer select-none bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
+          <input type="checkbox" id="filter-mistakes" class="rounded accent-blue-500">
+          <span>Tylko moje błędy</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- VIEW 1: QUIZ -->
+    <section id="view-quiz" class="flex-1 flex flex-col items-center justify-center max-w-3xl mx-auto w-full">
+      <div id="quiz-card" class="w-full bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-8 shadow-2xl flex flex-col gap-6 relative overflow-hidden">
+        
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-2">
+            <span id="quiz-category" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+              Kategoria
+            </span>
+            <span id="quiz-multi-badge" class="hidden text-xs font-semibold px-2.5 py-1 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/30 flex items-center gap-1">
+              🔹 Wielokrotny wybór
+            </span>
+          </div>
+          <div class="flex items-center gap-2 text-xs text-slate-400">
+            <span>Pytanie:</span>
+            <span id="quiz-index-indicator" class="font-bold text-white">1 / 10</span>
+          </div>
+        </div>
+
+        <div class="min-h-[70px] flex items-center">
+          <h2 id="quiz-question-text" class="text-base sm:text-lg font-medium text-slate-100 leading-snug">
+            Ładowanie pytania...
+          </h2>
+        </div>
+
+        <!-- OPTIONS CONTAINER -->
+        <div id="quiz-options" class="flex flex-col gap-3"></div>
+
+        <!-- MULTI SUBMIT BUTTON (Only shown for multi-choice when not submitted) -->
+        <div id="multi-submit-container" class="hidden pt-2 flex justify-end">
+          <button id="btn-submit-multi" class="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold shadow-lg shadow-purple-600/30 transition-all flex items-center gap-2">
+            <span>✓ Sprawdź zaznaczone odpowiedzi</span>
+          </button>
+        </div>
+
+        <!-- HINT & FEEDBACK BOX -->
+        <div id="quiz-hint-box" class="hidden p-4 rounded-xl bg-slate-950 border border-slate-800 text-xs sm:text-sm">
+          <div class="flex items-start gap-2.5">
+            <span id="quiz-feedback-icon" class="text-lg leading-none">💡</span>
+            <div class="flex-1">
+              <div id="quiz-feedback-title" class="font-bold text-blue-300 mb-1">Pigułka wiedzy:</div>
+              <p id="quiz-hint-text" class="leading-relaxed text-slate-300"></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- FOOTER NAV BUTTONS -->
+        <div class="flex items-center justify-between pt-3 border-t border-slate-800">
+          <button id="btn-quiz-prev" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 transition-colors flex items-center gap-1.5 cursor-pointer">
+            &larr; Poprzednie
+          </button>
+          <button id="btn-quiz-shuffle" title="Wylosuj losowe pytanie" class="px-3.5 py-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-xs font-medium text-slate-300 transition-colors cursor-pointer flex items-center gap-1">
+            🎲 Losuj
+          </button>
+          <button id="btn-quiz-next" class="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white transition-colors flex items-center gap-1.5 shadow-lg shadow-blue-600/20 cursor-pointer">
+            Następne &rarr;
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 2: FLASHCARDS -->
+    <section id="view-flashcards" class="hidden flex-1 flex flex-col items-center justify-center max-w-2xl mx-auto w-full gap-6">
+      <div class="text-center">
+        <p class="text-xs text-slate-400">Kliknij na kartę, aby ją odwrócić i sprawdzić odpowiedzi oraz uzasadnienie.</p>
+        <div class="text-xs font-semibold text-blue-400 mt-1" id="fc-progress">Karta 1 z 10</div>
+      </div>
+
+      <div id="fc-card" onclick="flipCard()" class="perspective w-full h-[350px] sm:h-[380px] cursor-pointer group">
+        <div id="fc-card-inner" class="flip-card-inner w-full h-full relative rounded-2xl shadow-2xl border border-slate-800 bg-slate-900">
+          
+          <!-- FRONT -->
+          <div class="backface-hidden absolute inset-0 p-6 sm:p-8 flex flex-col justify-between rounded-2xl bg-slate-900 border border-slate-800">
+            <div class="flex items-center justify-between">
+              <span id="fc-cat-badge" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">Kategoria</span>
+              <span class="text-xs text-slate-500 flex items-center gap-1">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path></svg>
+                Kliknij aby sprawdzić
+              </span>
+            </div>
+            
+            <div class="my-auto">
+              <span class="text-xs text-slate-400 block mb-2 font-mono">Pytanie:</span>
+              <h3 id="fc-question-text" class="text-base sm:text-lg font-medium text-white leading-relaxed"></h3>
+            </div>
+
+            <div class="text-center text-xs text-slate-500 border-t border-slate-800 pt-2">
+              Dotknij, aby zobaczyć prawidłowe odpowiedzi z klucza
+            </div>
+          </div>
+
+          <!-- BACK -->
+          <div class="backface-hidden rotate-y-180 absolute inset-0 p-6 sm:p-8 flex flex-col justify-between rounded-2xl bg-slate-950 border border-blue-500/40 overflow-y-auto custom-scrollbar">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full flex items-center gap-1">
+                ✓ Prawidłowe odpowiedzi
+              </span>
+              <span class="text-xs text-slate-400">Kliknij aby odwrócić</span>
+            </div>
+
+            <div class="my-auto space-y-3 py-2">
+              <div id="fc-answer-text" class="text-sm font-semibold text-emerald-300 bg-emerald-950/40 p-3 rounded-xl border border-emerald-800/40 leading-relaxed"></div>
+              <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 text-xs text-slate-300">
+                <strong class="text-blue-300 block mb-1">💡 Uzasadnienie:</strong>
+                <p id="fc-hint-text" class="leading-relaxed"></p>
+              </div>
+            </div>
+
+            <div class="text-center text-xs text-slate-500 border-t border-slate-800 pt-2">
+              Karta odwrócona
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button onclick="prevCard()" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 transition-colors cursor-pointer">
+          &larr; Poprzednia
+        </button>
+        <button onclick="nextCard()" class="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white transition-colors shadow-lg shadow-blue-600/20 cursor-pointer">
+          Następna karta &rarr;
+        </button>
+      </div>
+    </section>
+
+    <!-- VIEW 3: FULL LIST -->
+    <section id="view-list" class="hidden flex-1 flex flex-col gap-4">
+      <div class="flex items-center justify-between">
+        <p class="text-xs text-slate-400">
+          Liczba widocznych pytań: <span id="list-count" class="font-bold text-white">10</span>
+        </p>
+        <div class="flex items-center gap-2">
+          <button onclick="toggleAllAnswers(true)" class="text-xs px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 cursor-pointer">
+            Rozwiń odpowiedzi
+          </button>
+          <button onclick="toggleAllAnswers(false)" class="text-xs px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 cursor-pointer">
+            Zwiń odpowiedzi
+          </button>
+        </div>
+      </div>
+
+      <div id="questions-list-container" class="flex flex-col gap-3"></div>
+    </section>
+
+  </main>
+
+  <script>
+    const rawQuestions = [
+  {
+    "id": 1,
+    "displayId": 1,
+    "q": "W jaki sposób zalogować się pierwszorazowo do CPP:",
+    "options": [
+      "Poprzez link w zaproszeniu, otrzymanym na maila",
+      "Poprzez zalogowanie się do portalu z głównego linku",
+      "Poprzez link w systemie AHRP"
+    ],
+    "correct": [
+      0
+    ],
+    "is_multi": false,
+    "cat": "cpp",
+    "catName": "CPP",
+    "hint": "Poprawna odpowiedź: „Poprzez link w zaproszeniu, otrzymanym na maila”."
+  },
+  {
+    "id": 2,
+    "displayId": 2,
+    "q": "W trakcie pierwszego logowania użytkownik kliknął w link w zaproszeniu, po czym, nie kończąc procesu logowania, zamknął przeglądarkę. Co należy zrobić:",
+    "options": [
+      "W przypadku przerwania procesu, użytkownik może ustawić hasło do systemu - skonfigurować dane korzystając z opcji \"Nie pamietam hasła\" na stronie logowania.",
+      "W przypadku przerwania procesu, użytkownik musi wnioskować o ustawienie hasła przez administratora",
+      "W przypadku przerwania procesu, użytkownik musi otrzymać nowe zaproszenie"
+    ],
+    "correct": [
+      2
+    ],
+    "is_multi": false,
+    "cat": "cpp",
+    "catName": "CPP",
+    "hint": "Poprawna odpowiedź: „W przypadku przerwania procesu, użytkownik musi otrzymać nowe zaproszenie”."
+  },
+  {
+    "id": 3,
+    "displayId": 3,
+    "q": "Jakie są wymagania techniczne na potrzeby systemu CPP:",
+    "options": [
+      "Urządzenie VPN (brama, router) kompatybilne z protokołem IKEv2 i szyfrowaniem AES256",
+      "Maszyna Windows Server w infrastrukturze podmiotu",
+      "Dostęp do sieci Internet"
+    ],
+    "correct": [
+      0,
+      1,
+      2
+    ],
+    "is_multi": true,
+    "cat": "cpp",
+    "catName": "CPP",
+    "hint": "Poprawne odpowiedzi: „Urządzenie VPN (brama, router) kompatybilne z protokołem IKEv2 i szyfrowaniem AES256”, „Maszyna Windows Server w infrastrukturze podmiotu”, „Dostęp do sieci Internet”. Wymogi architektury portalu Asseco."
+  },
+  {
+    "id": 4,
+    "displayId": 4,
+    "q": "Dostęp do systemu CPP jest zabezpieczony między innymi poprzez:",
+    "options": [
+      "Autoryzację dwuetapową z użyciem aplikacji Microsoft Authenticator lub Google Authenticator zainstalowanej na urządzeniu mobilnym.",
+      "Dostęp do systemu CPP i bramki jest ograniczony tylko do adresów IP lokalizowanych na terytorium Polski",
+      "Użytkownik musi posiadać konto w domenie @cppasseco.pl przypisane do konkretnego podmiotu"
+    ],
+    "correct": [
+      0,
+      1,
+      2
+    ],
+    "is_multi": true,
+    "cat": "cpp",
+    "catName": "CPP",
+    "hint": "Poprawne odpowiedzi: „Autoryzację dwuetapową z użyciem aplikacji Microsoft Authenticator lub Google Authenticator zainstalowanej na urządzeniu mobilnym.”, „Dostęp do systemu CPP i bramki jest ograniczony tylko do adresów IP lokalizowanych na terytorium Polski”, „Użytkownik musi posiadać konto w domenie @cppasseco.pl przypisane do konkretnego podmiotu”. Wymogi architektury portalu Asseco."
+  },
+  {
+    "id": 5,
+    "displayId": 5,
+    "q": "Jakie dane należy przekazać operatorowi systemu CPP w celu założenia konta administratora czyli pierwszego użytkownika systemu CPP:",
+    "options": [
+      "Wymagane dane to: imię, nazwisko, e-mail oraz numer telefonu.",
+      "Wymagane dane to: imię, nazwisko",
+      "Wymagane dane to: imię, nazwisko oraz numer telefonu."
+    ],
+    "correct": [
+      0
+    ],
+    "is_multi": false,
+    "cat": "cpp",
+    "catName": "CPP",
+    "hint": "Poprawna odpowiedź: „Wymagane dane to: imię, nazwisko, e-mail oraz numer telefonu.”."
+  },
+  {
+    "id": 6,
+    "displayId": 6,
+    "q": "W jaki sposób można przejść w CPP do AHRP:",
+    "options": [
+      "Użytkownik na widżecie klika w konkretne zadanie",
+      "Użytkownik z głównego menu przechodzi do systemu AHRP",
+      "Użytkownik nie ma możliwości przejścia do AHRP"
+    ],
+    "correct": [
+      0,
+      1
+    ],
+    "is_multi": true,
+    "cat": "cpp",
+    "catName": "CPP",
+    "hint": "Poprawne odpowiedzi: „Użytkownik na widżecie klika w konkretne zadanie”, „Użytkownik z głównego menu przechodzi do systemu AHRP”. Wymogi architektury portalu Asseco."
+  },
+  {
+    "id": 7,
+    "displayId": 7,
+    "q": "W jaki sposób zasilany jest rejestr użytkowników w CPP na potrzeby korzystania z AHRP?",
+    "options": [
+      "Automatyczna synchronizacja",
+      "Wczytanie listy użytkowników z pliku",
+      "Wprowadzenie ręczne w rejestrze personelu przez administratora placówki"
+    ],
+    "correct": [
+      0,
+      1,
+      2
+    ],
+    "is_multi": true,
+    "cat": "cpp",
+    "catName": "CPP",
+    "hint": "Poprawne odpowiedzi: „Automatyczna synchronizacja”, „Wczytanie listy użytkowników z pliku”, „Wprowadzenie ręczne w rejestrze personelu przez administratora placówki”. Wymogi architektury portalu Asseco."
+  },
+  {
+    "id": 8,
+    "displayId": 8,
+    "q": "Po zakończeniu pracy w systemach dziedzinowych AHRP należy:",
+    "options": [
+      "Zamknąć wszystkie otwarte karty z aplikacjami",
+      "Wylogować się z aplikacji CPP",
+      "Można nie zamykać otwartych kart"
+    ],
+    "correct": [
+      0,
+      1
+    ],
+    "is_multi": true,
+    "cat": "cpp",
+    "catName": "CPP",
+    "hint": "Poprawne odpowiedzi: „Zamknąć wszystkie otwarte karty z aplikacjami”, „Wylogować się z aplikacji CPP”. Wymogi architektury portalu Asseco."
+  },
+  {
+    "id": 9,
+    "displayId": 9,
+    "q": "Jakie są wymagania dot. systemu AHRP, aby mógł być wystawiony poprzez system CPP?",
+    "options": [
+      "System AHRP musi być wystawiony w sieci podmiotu na nazwie domenowej",
+      "System AHRP musi posiadać dostęp wyjściowy do sieci Internet",
+      "System AHRP musi być wystawiony w sieci podmiotu na protokole szyfrowanym HTTPS",
+      "System AHRP musi być wystawiony na publicznym adresie IP do sieci Internet"
+    ],
+    "correct": [
+      0,
+      2
+    ],
+    "is_multi": true,
+    "cat": "cpp",
+    "catName": "CPP",
+    "hint": "Poprawne odpowiedzi: „System AHRP musi być wystawiony w sieci podmiotu na nazwie domenowej”, „System AHRP musi być wystawiony w sieci podmiotu na protokole szyfrowanym HTTPS”. Wymogi architektury portalu Asseco."
+  },
+  {
+    "id": 10,
+    "displayId": 10,
+    "q": "Dane z AHRP w CPP będą widoczne gdy:",
+    "options": [
+      "Użytkownik CPP powiąże swojego użytkownika z kontem w AHRP",
+      "Nadano użytkownikowi w CPP uprawnienie do dostępu do danych w AHRP",
+      "Użytkownik ma odpowiednie prawa w AHRP"
+    ],
+    "correct": [
+      0,
+      1,
+      2
+    ],
+    "is_multi": true,
+    "cat": "cpp",
+    "catName": "CPP",
+    "hint": "Poprawne odpowiedzi: „Użytkownik CPP powiąże swojego użytkownika z kontem w AHRP”, „Nadano użytkownikowi w CPP uprawnienie do dostępu do danych w AHRP”, „Użytkownik ma odpowiednie prawa w AHRP”. Wymogi architektury portalu Asseco."
+  }
+];
+    const storageKey = 'kp_suite_cpp';
+
+    let currentTab = 'quiz';
+    let filteredQuestions = [...rawQuestions];
+    let quizIndex = 0;
+    let flashcardIndex = 0;
+    let userAnswers = {};
+    let currentMultiSelections = [];
+
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) userAnswers = JSON.parse(saved);
+    } catch(e) {}
+
+    function initApp() {
+      initEventListeners();
+      updateFilteredQuestions();
+      updateStats();
+      renderQuizQuestion();
+      renderFlashcard();
+      renderList();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initApp);
+    } else {
+      initApp();
+    }
+
+    function initEventListeners() {
+      const catSelect = document.getElementById('category-select');
+      if (catSelect) {
+        catSelect.onchange = () => {
+          updateFilteredQuestions();
+          quizIndex = 0;
+          flashcardIndex = 0;
+          renderQuizQuestion();
+          renderFlashcard();
+          renderList();
+        };
+      }
+
+      const searchInput = document.getElementById('search-input');
+      if (searchInput) {
+        searchInput.oninput = () => {
+          updateFilteredQuestions();
+          quizIndex = 0;
+          flashcardIndex = 0;
+          renderQuizQuestion();
+          renderFlashcard();
+          renderList();
+        };
+      }
+
+      const multiFilter = document.getElementById('filter-multi');
+      if (multiFilter) {
+        multiFilter.onchange = () => {
+          updateFilteredQuestions();
+          quizIndex = 0;
+          flashcardIndex = 0;
+          renderQuizQuestion();
+          renderFlashcard();
+          renderList();
+        };
+      }
+
+      const mistakesFilter = document.getElementById('filter-mistakes');
+      if (mistakesFilter) {
+        mistakesFilter.onchange = () => {
+          updateFilteredQuestions();
+          quizIndex = 0;
+          flashcardIndex = 0;
+          renderQuizQuestion();
+          renderFlashcard();
+          renderList();
+        };
+      }
+
+      const btnPrev = document.getElementById('btn-quiz-prev');
+      if (btnPrev) {
+        btnPrev.onclick = () => {
+          if (quizIndex > 0) {
+            quizIndex--;
+            renderQuizQuestion();
+          }
+        };
+      }
+
+      const btnNext = document.getElementById('btn-quiz-next');
+      if (btnNext) {
+        btnNext.onclick = () => {
+          if (quizIndex < filteredQuestions.length - 1) {
+            quizIndex++;
+            renderQuizQuestion();
+          }
+        };
+      }
+
+      const btnShuffle = document.getElementById('btn-quiz-shuffle');
+      if (btnShuffle) {
+        btnShuffle.onclick = () => {
+          if (filteredQuestions.length > 0) {
+            quizIndex = Math.floor(Math.random() * filteredQuestions.length);
+            renderQuizQuestion();
+          }
+        };
+      }
+
+      const btnReset = document.getElementById('btn-reset-stats');
+      if (btnReset) {
+        btnReset.onclick = () => {
+          if (confirm('Czy na pewno chcesz zresetować historię odpowiedzi tego modułu?')) {
+            userAnswers = {};
+            try { localStorage.removeItem(storageKey); } catch(e) {}
+            updateStats();
+            renderQuizQuestion();
+            renderList();
+          }
+        };
+      }
+
+      const btnMulti = document.getElementById('btn-submit-multi');
+      if (btnMulti) {
+        btnMulti.onclick = () => {
+          submitMultiChoice();
+        };
+      }
+
+      window.addEventListener('keydown', (e) => {
+        if (currentTab !== 'quiz') return;
+        if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) return;
+
+        if (e.key === 'ArrowRight') {
+          if (quizIndex < filteredQuestions.length - 1) {
+            quizIndex++;
+            renderQuizQuestion();
+          }
+        } else if (e.key === 'ArrowLeft') {
+          if (quizIndex > 0) {
+            quizIndex--;
+            renderQuizQuestion();
+          }
+        } else if (['1', '2', '3', '4', 'a', 'b', 'c', 'd', 'A', 'B', 'C', 'D'].includes(e.key)) {
+          let optIdx = -1;
+          if (['1', 'a', 'A'].includes(e.key)) optIdx = 0;
+          if (['2', 'b', 'B'].includes(e.key)) optIdx = 1;
+          if (['3', 'c', 'C'].includes(e.key)) optIdx = 2;
+          if (['4', 'd', 'D'].includes(e.key)) optIdx = 3;
+          const currQ = filteredQuestions[quizIndex];
+          if (currQ && optIdx >= 0 && optIdx < currQ.options.length) {
+            handleOptionClick(currQ.id, optIdx);
+          }
+        }
+      });
+    }
+
+    function setTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-blue-600', 'text-white', 'shadow');
+        btn.classList.add('text-slate-400', 'hover:text-slate-200');
+      });
+      const activeBtn = document.getElementById(`tab-${tab}`);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-blue-600', 'text-white', 'shadow');
+        activeBtn.classList.remove('text-slate-400', 'hover:text-slate-200');
+      }
+
+      ['quiz', 'flashcards', 'list'].forEach(t => {
+        const el = document.getElementById(`view-${t}`);
+        if (el) el.classList.add('hidden');
+      });
+      const targetView = document.getElementById(`view-${tab}`);
+      if (targetView) targetView.classList.remove('hidden');
+
+      if (tab === 'list') renderList();
+      if (tab === 'flashcards') renderFlashcard();
+      if (tab === 'quiz') renderQuizQuestion();
+    }
+
+    function updateFilteredQuestions() {
+      const catEl = document.getElementById('category-select');
+      const searchEl = document.getElementById('search-input');
+      const multiEl = document.getElementById('filter-multi');
+      const mistakesEl = document.getElementById('filter-mistakes');
+
+      const cat = catEl ? catEl.value : 'all';
+      const search = searchEl ? searchEl.value.toLowerCase().trim() : '';
+      const onlyMulti = multiEl ? multiEl.checked : false;
+      const onlyMistakes = mistakesEl ? mistakesEl.checked : false;
+
+      filteredQuestions = rawQuestions.filter(q => {
+        if (cat !== 'all' && q.cat !== cat) return false;
+        if (onlyMulti && !q.is_multi) return false;
+
+        if (search) {
+          const matchQ = q.q.toLowerCase().includes(search);
+          const matchOpt = q.options.some(o => o.toLowerCase().includes(search));
+          const matchHint = (q.hint || '').toLowerCase().includes(search);
+          if (!matchQ && !matchOpt && !matchHint) return false;
+        }
+
+        if (onlyMistakes) {
+          const ans = userAnswers[q.id];
+          if (ans === undefined) return false;
+          if (isUserAnswerCorrect(q, ans)) return false;
+        }
+
+        return true;
+      });
+
+      const listCountEl = document.getElementById('list-count');
+      if (listCountEl) listCountEl.textContent = filteredQuestions.length;
+    }
+
+    function isUserAnswerCorrect(q, ans) {
+      if (ans === undefined) return false;
+      if (Array.isArray(ans)) {
+        if (ans.length === 0) return false;
+        // User is correct if all picked answers are in q.correct
+        const allInCorrect = ans.every(idx => q.correct.includes(idx));
+        return allInCorrect;
+      } else {
+        return q.correct.includes(ans);
+      }
+    }
+
+    function updateStats() {
+      const total = rawQuestions.length;
+      const answeredKeys = Object.keys(userAnswers);
+      const answered = answeredKeys.length;
+      let correct = 0;
+
+      answeredKeys.forEach(id => {
+        const q = rawQuestions.find(item => item.id == id);
+        if (q) {
+          if (isUserAnswerCorrect(q, userAnswers[id])) correct++;
+        }
+      });
+
+      const accuracy = answered > 0 ? Math.round((correct / answered) * 100) : 0;
+      const countEl = document.getElementById('answered-count');
+      if (countEl) countEl.textContent = `${answered} / ${total}`;
+      const accEl = document.getElementById('accuracy-rate');
+      if (accEl) accEl.textContent = `${accuracy}% (${correct} poprawnych)`;
+    }
+
+    function renderQuizQuestion() {
+      const catBadge = document.getElementById('quiz-category');
+      const multiBadge = document.getElementById('quiz-multi-badge');
+      const indexIndicator = document.getElementById('quiz-index-indicator');
+      const qTextEl = document.getElementById('quiz-question-text');
+      const optionsContainer = document.getElementById('quiz-options');
+      const multiSubmitContainer = document.getElementById('multi-submit-container');
+      const hintBox = document.getElementById('quiz-hint-box');
+      const hintText = document.getElementById('quiz-hint-text');
+      const feedbackTitle = document.getElementById('quiz-feedback-title');
+      const feedbackIcon = document.getElementById('quiz-feedback-icon');
+
+      if (!optionsContainer) return;
+
+      if (filteredQuestions.length === 0) {
+        if (catBadge) catBadge.textContent = 'Brak pytań';
+        if (multiBadge) multiBadge.classList.add('hidden');
+        if (indexIndicator) indexIndicator.textContent = '0 / 0';
+        if (qTextEl) qTextEl.textContent = 'Nie znaleziono pytań dla wybranych filtrów.';
+        optionsContainer.innerHTML = '';
+        if (multiSubmitContainer) multiSubmitContainer.classList.add('hidden');
+        if (hintBox) hintBox.classList.add('hidden');
+        return;
+      }
+
+      if (quizIndex >= filteredQuestions.length) quizIndex = 0;
+      const q = filteredQuestions[quizIndex];
+
+      if (catBadge) catBadge.textContent = q.catName;
+      if (multiBadge) {
+        if (q.is_multi) {
+          multiBadge.classList.remove('hidden');
+        } else {
+          multiBadge.classList.add('hidden');
+        }
+      }
+      if (indexIndicator) indexIndicator.textContent = `${quizIndex + 1} / ${filteredQuestions.length}`;
+      if (qTextEl) qTextEl.textContent = `${q.displayId || q.id}. ${q.q}`;
+
+      optionsContainer.innerHTML = '';
+
+      const letters = ['A', 'B', 'C', 'D', 'E'];
+      const userSelected = userAnswers[q.id];
+      const hasAnswered = (userSelected !== undefined);
+
+      if (q.is_multi && !hasAnswered) {
+        if (multiSubmitContainer) multiSubmitContainer.classList.remove('hidden');
+      } else {
+        if (multiSubmitContainer) multiSubmitContainer.classList.add('hidden');
+      }
+
+      q.options.forEach((opt, idx) => {
+        const btn = document.createElement('div');
+        btn.className = `w-full text-left p-3.5 sm:p-4 rounded-xl border text-xs sm:text-sm font-medium transition-all flex items-start gap-3 relative cursor-pointer select-none `;
+
+        let badgeStyle = "bg-slate-800 text-slate-300 border-slate-700";
+        let cardStyle = "bg-slate-950/60 hover:bg-slate-850 border-slate-800 text-slate-200 hover:border-slate-600";
+        let indicatorContent = letters[idx];
+
+        if (hasAnswered) {
+          const isCorrectChoice = q.correct.includes(idx);
+          const userPickedThis = Array.isArray(userSelected) ? userSelected.includes(idx) : (userSelected === idx);
+
+          if (isCorrectChoice) {
+            cardStyle = "bg-emerald-950/40 border-emerald-500 text-emerald-200 shadow-md shadow-emerald-950/30";
+            badgeStyle = "bg-emerald-600 text-white border-emerald-400 font-bold";
+            indicatorContent = "✓";
+          } else if (userPickedThis && !isCorrectChoice) {
+            cardStyle = "bg-rose-950/40 border-rose-500 text-rose-200 shadow-md shadow-rose-950/30";
+            badgeStyle = "bg-rose-600 text-white border-rose-400 font-bold";
+            indicatorContent = "✗";
+          } else {
+            cardStyle = "bg-slate-950/30 border-slate-900 text-slate-500 opacity-50";
+          }
+        } else if (q.is_multi && currentMultiSelections.includes(idx)) {
+          cardStyle = "bg-purple-950/40 border-purple-500 text-purple-200";
+          badgeStyle = "bg-purple-600 text-white border-purple-400";
+          indicatorContent = "✓";
+        }
+
+        btn.className += cardStyle;
+        btn.innerHTML = `
+          <span class="w-6 h-6 rounded-lg border text-xs font-bold flex items-center justify-center shrink-0 ${badgeStyle}">
+            ${indicatorContent}
+          </span>
+          <span class="leading-relaxed flex-1">${opt}</span>
+        `;
+
+        btn.onclick = () => {
+          handleOptionClick(q.id, idx);
+        };
+
+        optionsContainer.appendChild(btn);
+      });
+
+      if (hintBox && hintText) {
+        if (hasAnswered) {
+          hintBox.classList.remove('hidden');
+          const isCorrect = isUserAnswerCorrect(q, userSelected);
+          if (isCorrect) {
+            if (q.is_multi) {
+              const correctNames = q.correct.map(ci => letters[ci]).join(' i ');
+              feedbackTitle.innerHTML = `<span class="text-emerald-400">✓ Świetnie! Poprawne odpowiedzi w tym pytaniu to: ${correctNames}</span>`;
+            } else {
+              feedbackTitle.innerHTML = `<span class="text-emerald-400">✓ Prawidłowa odpowiedź!</span>`;
+            }
+            feedbackIcon.textContent = "🎉";
+          } else {
+            const correctNames = q.correct.map(ci => letters[ci]).join(', ');
+            feedbackTitle.innerHTML = `<span class="text-rose-400">✗ Błędna odpowiedź. W kluczu docx poprawna to: ${correctNames}</span>`;
+            feedbackIcon.textContent = "💡";
+          }
+          hintText.textContent = q.hint || "Odpowiedź wynika z oficjalnego arkusza egzaminacyjnego.";
+        } else {
+          hintBox.classList.add('hidden');
+        }
+      }
+
+      const prevBtn = document.getElementById('btn-quiz-prev');
+      if (prevBtn) prevBtn.disabled = (quizIndex === 0);
+      const nextBtn = document.getElementById('btn-quiz-next');
+      if (nextBtn) nextBtn.disabled = (quizIndex === filteredQuestions.length - 1);
+    }
+
+    function handleOptionClick(qId, idx) {
+      const q = filteredQuestions.find(item => item.id == qId);
+      if (!q) return;
+
+      const hasAnswered = (userAnswers[qId] !== undefined);
+      if (hasAnswered) return; // already answered
+
+      if (q.is_multi) {
+        // Toggle multi selection
+        if (currentMultiSelections.includes(idx)) {
+          currentMultiSelections = currentMultiSelections.filter(i => i !== idx);
+        } else {
+          currentMultiSelections.push(idx);
+        }
+        renderQuizQuestion();
+      } else {
+        // Single choice immediate evaluation
+        userAnswers[qId] = idx;
+        saveAnswers();
+        updateStats();
+        renderQuizQuestion();
+      }
+    }
+
+    function submitMultiChoice() {
+      const q = filteredQuestions[quizIndex];
+      if (!q) return;
+      if (currentMultiSelections.length === 0) {
+        alert('Zaznacz przynajmniej jedną odpowiedź przed sprawdzeniem.');
+        return;
+      }
+      userAnswers[q.id] = [...currentMultiSelections];
+      currentMultiSelections = [];
+      saveAnswers();
+      updateStats();
+      renderQuizQuestion();
+    }
+
+    function saveAnswers() {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(userAnswers));
+      } catch(e) {}
+    }
+
+    function renderFlashcard() {
+      const inner = document.getElementById('fc-card-inner');
+      if (inner) inner.classList.remove('flipped');
+
+      if (filteredQuestions.length === 0) return;
+      if (flashcardIndex >= filteredQuestions.length) flashcardIndex = 0;
+      const q = filteredQuestions[flashcardIndex];
+
+      const p = document.getElementById('fc-progress');
+      if (p) p.textContent = `Karta ${flashcardIndex + 1} z ${filteredQuestions.length}`;
+      const b = document.getElementById('fc-cat-badge');
+      if (b) b.textContent = q.catName;
+      const qTxt = document.getElementById('fc-question-text');
+      if (qTxt) qTxt.textContent = `${q.displayId || q.id}. ${q.q}`;
+
+      const correctHtml = q.correct.map(idx => `
+        <div class="flex items-start gap-2 mb-2 p-2 rounded-lg bg-emerald-950/60 border border-emerald-800/60 text-emerald-200">
+          <span class="text-emerald-400 font-bold shrink-0">✓</span>
+          <span>${q.options[idx]}</span>
+        </div>
+      `).join('');
+
+      const a = document.getElementById('fc-answer-text');
+      if (a) a.innerHTML = correctHtml;
+      const h = document.getElementById('fc-hint-text');
+      if (h) h.textContent = q.hint || "Klucz odpowiedzi z pliku docx.";
+    }
+
+    function flipCard() {
+      const inner = document.getElementById('fc-card-inner');
+      if (inner) inner.classList.toggle('flipped');
+    }
+
+    function prevCard() {
+      if (flashcardIndex > 0) {
+        flashcardIndex--;
+        renderFlashcard();
+      }
+    }
+
+    function nextCard() {
+      if (flashcardIndex < filteredQuestions.length - 1) {
+        flashcardIndex++;
+        renderFlashcard();
+      }
+    }
+
+    function renderList() {
+      const container = document.getElementById('questions-list-container');
+      if (!container) return;
+
+      container.innerHTML = '';
+      const letters = ['A', 'B', 'C', 'D', 'E'];
+
+      filteredQuestions.forEach((q, qIdx) => {
+        const card = document.createElement('div');
+        card.className = "bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5 flex flex-col gap-3 shadow-md";
+
+        let optionsHtml = '';
+        q.options.forEach((opt, idx) => {
+          const isCorrect = q.correct.includes(idx);
+          if (isCorrect) {
+            optionsHtml += `
+              <div class="p-2.5 rounded-lg bg-emerald-950/40 border border-emerald-500/50 text-emerald-200 text-xs sm:text-sm font-medium flex items-start gap-2.5">
+                <span class="w-5 h-5 rounded bg-emerald-500 text-slate-950 font-bold flex items-center justify-center shrink-0 text-xs">✓</span>
+                <span class="leading-relaxed"><strong class="text-emerald-300 mr-1">${letters[idx]})</strong> ${opt}</span>
+              </div>
+            `;
+          } else {
+            optionsHtml += `
+              <div class="p-2 rounded-lg bg-slate-950/50 border border-slate-800/80 text-slate-400 text-xs sm:text-sm flex items-start gap-2.5">
+                <span class="w-5 h-5 rounded bg-slate-800 text-slate-400 flex items-center justify-center shrink-0 text-xs">${letters[idx]}</span>
+                <span class="leading-relaxed">${opt}</span>
+              </div>
+            `;
+          }
+        });
+
+        card.innerHTML = `
+          <div class="flex items-start justify-between gap-3 border-b border-slate-800/80 pb-2.5">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-xs font-semibold px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                ${q.catName}
+              </span>
+              ${q.is_multi ? '<span class="text-xs font-semibold px-2 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/30">Wielokrotny wybór</span>' : ''}
+            </div>
+            <span class="text-xs font-bold text-slate-500 font-mono">#${q.displayId || q.id}</span>
+          </div>
+
+          <h3 class="text-sm sm:text-base font-semibold text-slate-100 leading-snug">
+            ${q.displayId || q.id}. ${q.q}
+          </h3>
+
+          <div class="options-block flex flex-col gap-2 pt-1">
+            ${optionsHtml}
+          </div>
+
+          <div class="p-3 bg-slate-950 rounded-lg border border-slate-800/90 text-xs text-slate-300 flex items-start gap-2">
+            <span class="text-blue-400 text-base leading-none">💡</span>
+            <div>
+              <strong class="text-blue-300 block mb-0.5">Uzasadnienie z klucza:</strong>
+              <p class="leading-relaxed text-slate-400">${q.hint || "Zgodne z oficjalnym kluczem docx."}</p>
+            </div>
+          </div>
+        `;
+
+        container.appendChild(card);
+      });
+    }
+
+    function toggleAllAnswers(show) {
+      document.querySelectorAll('#questions-list-container .options-block').forEach(el => {
+        if (show) {
+          el.classList.remove('hidden');
+        } else {
+          el.classList.add('hidden');
+        }
+      });
+    }
+  </script>
+</body>
+</html>
