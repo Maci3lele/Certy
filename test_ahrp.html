@@ -665,11 +665,12 @@
       if (ans === undefined) return false;
       if (Array.isArray(ans)) {
         if (ans.length === 0) return false;
-        // User is correct if all picked answers are in q.correct
-        const allInCorrect = ans.every(idx => q.correct.includes(idx));
-        return allInCorrect;
+        // Użytkownik musi wybrać dokładnie wszystkie poprawne odpowiedzi i żadnej błędnej
+        const uniqueAns = [...new Set(ans)];
+        if (uniqueAns.length !== q.correct.length) return false;
+        return uniqueAns.every(idx => q.correct.includes(idx));
       } else {
-        return q.correct.includes(ans);
+        return q.correct.length === 1 && q.correct.includes(ans);
       }
     }
 
@@ -751,21 +752,30 @@
         let badgeStyle = "bg-slate-800 text-slate-300 border-slate-700";
         let cardStyle = "bg-slate-950/60 hover:bg-slate-850 border-slate-800 text-slate-200 hover:border-slate-600";
         let indicatorContent = letters[idx];
+        let tagHtml = "";
 
         if (hasAnswered) {
           const isCorrectChoice = q.correct.includes(idx);
           const userPickedThis = Array.isArray(userSelected) ? userSelected.includes(idx) : (userSelected === idx);
 
-          if (isCorrectChoice) {
+          if (userPickedThis && isCorrectChoice) {
             cardStyle = "bg-emerald-950/40 border-emerald-500 text-emerald-200 shadow-md shadow-emerald-950/30";
             badgeStyle = "bg-emerald-600 text-white border-emerald-400 font-bold";
             indicatorContent = "✓";
+            tagHtml = `<span class="text-[11px] font-semibold text-emerald-400 bg-emerald-950/90 px-2 py-0.5 rounded border border-emerald-700/60 ml-auto shrink-0 self-center">✓ Twoja poprawna</span>`;
           } else if (userPickedThis && !isCorrectChoice) {
             cardStyle = "bg-rose-950/40 border-rose-500 text-rose-200 shadow-md shadow-rose-950/30";
             badgeStyle = "bg-rose-600 text-white border-rose-400 font-bold";
             indicatorContent = "✗";
+            tagHtml = `<span class="text-[11px] font-semibold text-rose-400 bg-rose-950/90 px-2 py-0.5 rounded border border-rose-700/60 ml-auto shrink-0 self-center">✗ Błędna odpowiedź</span>`;
+          } else if (!userPickedThis && isCorrectChoice) {
+            cardStyle = "bg-amber-950/20 border-2 border-dashed border-amber-500/80 text-amber-200";
+            badgeStyle = "bg-amber-600/30 text-amber-300 border-amber-400 font-bold";
+            indicatorContent = "!";
+            tagHtml = `<span class="text-[11px] font-semibold text-amber-400 bg-amber-950/90 px-2 py-0.5 rounded border border-amber-700/60 ml-auto shrink-0 self-center">⚠ Pominięta poprawna</span>`;
           } else {
-            cardStyle = "bg-slate-950/30 border-slate-900 text-slate-500 opacity-50";
+            cardStyle = "bg-slate-950/30 border-slate-900 text-slate-500 opacity-40";
+            badgeStyle = "bg-slate-900 text-slate-600 border-slate-800";
           }
         } else if (q.is_multi && currentMultiSelections.includes(idx)) {
           cardStyle = "bg-purple-950/40 border-purple-500 text-purple-200";
@@ -779,6 +789,7 @@
             ${indicatorContent}
           </span>
           <span class="leading-relaxed flex-1">${opt}</span>
+          ${tagHtml}
         `;
 
         btn.onclick = () => {
@@ -795,17 +806,48 @@
           if (isCorrect) {
             if (q.is_multi) {
               const correctNames = q.correct.map(ci => letters[ci]).join(' i ');
-              feedbackTitle.innerHTML = `<span class="text-emerald-400">✓ Świetnie! Poprawne odpowiedzi w tym pytaniu to: ${correctNames}</span>`;
+              feedbackTitle.innerHTML = `<span class="text-emerald-400">✓ Świetnie! Wybrano wszystkie poprawne odpowiedzi: ${correctNames}</span>`;
             } else {
               feedbackTitle.innerHTML = `<span class="text-emerald-400">✓ Prawidłowa odpowiedź!</span>`;
             }
             feedbackIcon.textContent = "🎉";
           } else {
-            const correctNames = q.correct.map(ci => letters[ci]).join(', ');
-            feedbackTitle.innerHTML = `<span class="text-rose-400">✗ Błędna odpowiedź. W kluczu docx poprawna to: ${correctNames}</span>`;
-            feedbackIcon.textContent = "💡";
+            if (q.is_multi) {
+              const userArr = Array.isArray(userSelected) ? userSelected : [userSelected];
+              const missing = q.correct.filter(ci => !userArr.includes(ci)).map(ci => letters[ci]);
+              const wrong = userArr.filter(ui => !q.correct.includes(ui)).map(ui => letters[ui]);
+              const correctNames = q.correct.map(ci => letters[ci]).join(', ');
+
+              if (wrong.length === 0 && missing.length > 0) {
+                feedbackTitle.innerHTML = `<span class="text-amber-400">⚠ Niepełna odpowiedź! Zaznaczono poprawne (${userArr.map(ui => letters[ui]).join(', ')}), ale zabrakło: ${missing.join(', ')}. Poprawne w kluczu to: ${correctNames}</span>`;
+                feedbackIcon.textContent = "⚠️";
+              } else {
+                feedbackTitle.innerHTML = `<span class="text-rose-400">✗ Błędna odpowiedź. W kluczu docx poprawne to: ${correctNames}</span>`;
+                feedbackIcon.textContent = "💡";
+              }
+            } else {
+              const correctNames = q.correct.map(ci => letters[ci]).join(', ');
+              feedbackTitle.innerHTML = `<span class="text-rose-400">✗ Błędna odpowiedź. W kluczu docx poprawna to: ${correctNames}</span>`;
+              feedbackIcon.textContent = "💡";
+            }
           }
           hintText.textContent = q.hint || "Odpowiedź wynika z oficjalnego arkusza egzaminacyjnego.";
+
+          let retryBtn = document.getElementById('btn-quiz-retry');
+          if (!retryBtn) {
+            retryBtn = document.createElement('button');
+            retryBtn.id = 'btn-quiz-retry';
+            retryBtn.className = "mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 border border-slate-700 cursor-pointer transition-colors";
+            retryBtn.innerHTML = "🔄 Odpowiedz ponownie na to pytanie";
+            hintBox.querySelector('.flex-1').appendChild(retryBtn);
+          }
+          retryBtn.onclick = () => {
+            delete userAnswers[q.id];
+            currentMultiSelections = [];
+            saveAnswers();
+            updateStats();
+            renderQuizQuestion();
+          };
         } else {
           hintBox.classList.add('hidden');
         }
